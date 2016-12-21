@@ -33,10 +33,7 @@ class LineIO extends React.Component {
     return (
       <div className="Lineio">
       <a href="#" onClick={ (e) => this.handleClick(e) }>Click me</a>
-      <Line
-      from={{x: this.state.x1, y: this.state.y2}}
-      to={{x: this.state.x2, y: this.state.y2}}
-      style="5px solid orange"/>
+      <Line from={{x: this.state.x1, y: this.state.y2}} to={{x: this.state.x2, y: this.state.y2}} style="5px solid orange"/>
        </div>
     );
   }
