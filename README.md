@@ -31,7 +31,10 @@ npm install --save-dev react
 npm install --save-dev react-dom
 npm install --save-dev babel-preset-react
 npm install --save-dev babel-preset-es2015
+npm install --save socket.io
 ```
+Notice we install socket.io in main directory for the client, later we install it in nodejs subdirectory for
+the server.
 
 ## Install nodejs backend
 
@@ -79,4 +82,12 @@ babel --presets react,es2015 js/source -d js/build
 browserify js/build/app.js -o bundle.js
 LINUX: cat css/*/* css/*.css | sed 's/..\/..\/images/images/g' > bundle.css
 Windows: type css\components\* css\* > bundle.css
+```
+
+To test the application using the reactjs frontend use we start a different backend Nodejs server:
+
+```
+cd <nodejs directory>
+node DataService.js
+Goto http://localhost:3000 , using multiple windows. Click on the link and see the result
 ```

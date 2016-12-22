@@ -14,3 +14,9 @@ $(function(){
     $('#message').val('');
   });
 });
+
+$(function(){
+  $('#setname').click(function(){
+    socket.emit("set_name", {name: $('#nickname').val()});
+  });
+});

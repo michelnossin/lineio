@@ -14,6 +14,10 @@ var _Line = require('./Line');
 
 var _Line2 = _interopRequireDefault(_Line);
 
+var _socket = require('socket.io-client');
+
+var _socket2 = _interopRequireDefault(_socket);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -21,6 +25,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var socket = (0, _socket2.default)('http://localhost:3000');
 
 var LineIO = function (_React$Component) {
   _inherits(LineIO, _React$Component);
@@ -35,14 +41,37 @@ var LineIO = function (_React$Component) {
       x1: 100,
       y1: 100,
       x2: 200,
-      y2: 200
+      y2: 200,
+      event_msg: {}
     };
 
     _this.setLine.bind(_this);
+    _this.sendMessage.bind(_this);
+    _this.receiveMessage.bind(_this);
+
+    socket.on('connect', function () {
+      console.log("Client receives connect event");
+      //this.receiveMessage("Connected server")
+    });
+
+    socket.on('serverevent', function (ev_msg) {
+      console.log("Client receives server event:" + ev_msg);
+      _this.receiveMessage(ev_msg.message);
+    });
     return _this;
   }
 
   _createClass(LineIO, [{
+    key: 'sendMessage',
+    value: function sendMessage(message) {
+      socket.emit('clientmessage', message);
+    }
+  }, {
+    key: 'receiveMessage',
+    value: function receiveMessage(server_msg) {
+      this.setState({ event_msg: { message: server_msg } });
+    }
+  }, {
     key: 'setLine',
     value: function setLine(x1, y1, x2, y2) {
       if (this.state.refresh == 1) {
@@ -54,6 +83,8 @@ var LineIO = function (_React$Component) {
     value: function handleClick(e) {
       e.preventDefault();
       this.setLine(this.state.x1, this.state.y1, this.state.x2 + 20, this.state.y2 + 20);
+      console.log("Client is sending message after click");
+      this.sendMessage({ type: 'userMessage', message: 'This is an event from client to server after a click' });
     }
   }, {
     key: 'render',
@@ -70,16 +101,26 @@ var LineIO = function (_React$Component) {
             } },
           'Click me'
         ),
-        _react2.default.createElement(_Line2.default, {
-          from: { x: this.state.x1, y: this.state.y2 },
-          to: { x: this.state.x2, y: this.state.y2 },
-          style: '5px solid orange' })
+        _react2.default.createElement(
+          'h1',
+          null,
+          'Message: ',
+          this.state.event_msg.message,
+          ' '
+        ),
+        _react2.default.createElement(_Line2.default, { from: { x: this.state.x1, y: this.state.y2 }, to: { x: this.state.x2, y: this.state.y2 }, style: '5px solid orange' })
       );
     }
   }]);
 
   return LineIO;
 }(_react2.default.Component);
+
+//Use this code to pass socket to client
+//<Child
+//        socket = { socket }
+//        sendMessage = { this.sendMessage }
+//      />
 
 LineIO.propTypes = {
   url: _react2.default.PropTypes.string //Not yet used, at some point backend will be added
