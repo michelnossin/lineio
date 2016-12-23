@@ -32,6 +32,7 @@ npm install --save-dev react-dom
 npm install --save-dev babel-preset-react
 npm install --save-dev babel-preset-es2015
 npm install --save socket.io
+npm install --save react-keydown
 ```
 Notice we install socket.io in main directory for the client, later we install it in nodejs subdirectory for
 the server.
