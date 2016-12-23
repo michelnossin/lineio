@@ -57,13 +57,19 @@ class LineIO extends React.Component {
 
     return (
       <div className="Lineio">
-      <a href="#" onClick={ (e) => this.handleClick(e) }>Click me</a>
-      <h1>Message: {this.state.event_msg.message} </h1>
       <Line from={{x: this.state.x1, y: this.state.y2}} to={{x: this.state.x2, y: this.state.y2}} style="5px solid orange"/>
        </div>
     );
   }
 }
+
+//This works
+//<div className="Lineio">
+//<a href="#" onClick={ (e) => this.handleClick(e) }>Click me</a>
+//<h1>Message: {this.state.event_msg.message} </h1>
+//<Line from={{x: this.state.x1, y: this.state.y2}} to={{x: this.state.x2, y: this.state.y2}} style="5px solid orange"/>
+// </div>
+
 
 //Use this code to pass socket to client
 //<Child

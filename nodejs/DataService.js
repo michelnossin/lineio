@@ -1,4 +1,3 @@
-
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -7,20 +6,17 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 path = require('path');
 
+//Config the app
 var app = express();
 app.use(express.static(__dirname + '/..'));
-
-// view engine setup
-//app.set('views', path.join(__dirname, 'views'));
-//app.set('view engine', 'html');
-
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+// uncomment after placing your favicon in /public
+//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -40,15 +36,14 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
+//Backend, use socket client on localhost port 3000
 var http = require('http');
 var server = http.createServer(app).listen(3000, function(){
   console.log("Express server listening on port 3000" );
    });
-
 require('./routes/sockets_server_lines.js').initialize(server);
 
 module.exports = app;
-
 
 // frontend url: http://localhost:3000
 app.get('/', function(req, res) {
