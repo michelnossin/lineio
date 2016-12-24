@@ -33,6 +33,7 @@ npm install --save-dev babel-preset-react
 npm install --save-dev babel-preset-es2015
 npm install --save socket.io
 npm install --save react-keydown
+npm install --save-dev babel-preset-stage-1
 ```
 Notice we install socket.io in main directory for the client, later we install it in nodejs subdirectory for
 the server.
@@ -79,7 +80,7 @@ to Javascript usable by any browser.
 
 From main Lineio directory execute these steps:
 ```
-babel --presets react,es2015 js/source -d js/build
+babel js/source -d js/build
 browserify js/build/app.js -o bundle.js
 LINUX: cat css/*/* css/*.css | sed 's/..\/..\/images/images/g' > bundle.css
 Windows: type css\components\* css\* > bundle.css

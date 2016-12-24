@@ -204,7 +204,7 @@ _reactDom2.default.render(_react2.default.createElement(
   null,
   _react2.default.createElement(_LineIO2.default, null)
 ), document.getElementById('app'));
-},{"./components/LineIO":5,"react":213,"react-dom":62}],4:[function(require,module,exports){
+},{"./components/LineIO":5,"react":227,"react-dom":62}],4:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -279,7 +279,7 @@ Line.propTypes = {
 };
 
 exports.default = Line;
-},{"react":213}],5:[function(require,module,exports){
+},{"react":227}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -287,6 +287,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _class;
 
 var _react = require('react');
 
@@ -300,6 +302,10 @@ var _socket = require('socket.io-client');
 
 var _socket2 = _interopRequireDefault(_socket);
 
+var _reactKeydown = require('react-keydown');
+
+var _reactKeydown2 = _interopRequireDefault(_reactKeydown);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -308,9 +314,9 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var socket = (0, _socket2.default)('http://localhost:3000');
+var socket = (0, _socket2.default)('http://localhost:3000'); //our server
 
-var LineIO = function (_React$Component) {
+var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
   _inherits(LineIO, _React$Component);
 
   function LineIO(props) {
@@ -321,44 +327,101 @@ var LineIO = function (_React$Component) {
     _this.state = {
       event_msg: {}, //message from server
       event_pos: { userA: { x1: 0, y1: 0, x2: 0, y2: 0 }, userB: { x1: 0, y1: 0, x2: 0, y2: 0 } }, //All player positions
-      key: 'n/a'
+      key: 'n/a', //key pressed
+      lines: [] //list of all non current lines
     };
 
     _this.sendMessage.bind(_this);
     _this.receiveMessage.bind(_this);
     _this.receivePositions.bind(_this);
+    _this.addLine.bind(_this);
 
+    //received connect from server
     socket.on('connect', function () {
       console.log("Client receives connect event");
     });
 
+    //receive event from server
     socket.on('serverevent', function (ev_msg) {
-      //console.log("Client receives server event:" + ev_msg );
       if (ev_msg.type == 'servermessage') {
-        _this.receiveMessage(ev_msg.message); //chat message
+        _this.receiveMessage(ev_msg.message);
       }
       if (ev_msg.type == 'positions') {
-        _this.receivePositions(ev_msg.players); //position players
+        _this.receivePositions(ev_msg.players);
       }
     });
     return _this;
   }
 
+  //keypress reveived to, eg , change the direction of our line
+
+
   _createClass(LineIO, [{
+    key: 'componentWillReceiveProps',
+    value: function componentWillReceiveProps(nextProps) {
+      var event = nextProps.keydown.event;
+
+      if (event) {
+        this.setState({ key: event.which });
+        //Change direction after cursor press
+        if (event.which == 37) {
+          this.sendMessage({ type: "userCommand", user: "userA", command: "L" });
+        }
+        if (event.which == 38) {
+          this.sendMessage({ type: "userCommand", user: "userA", command: "U" });
+        }
+        if (event.which == 39) {
+          this.sendMessage({ type: "userCommand", user: "userA", command: "R" });
+        }
+        if (event.which == 40) {
+          this.sendMessage({ type: "userCommand", user: "userA", command: "D" });
+        }
+        //if (event.which in [37,38,39,40] ) { this.addLine(this.state.event_pos) }  //save current line to history
+        this.addLine(this.state.event_pos);
+      }
+    }
+
+    //Add line to our history, triggered after keypress/change of direction of line
+
+  }, {
+    key: 'addLine',
+    value: function addLine(line) {
+      // State change will cause component re-render
+
+      //Current endpoint will become new begin point
+      var newx = this.state.event_pos.userA.x2;
+      var newy = this.state.event_pos.userA.y2;
+      var userB = this.state.event_pos.userB;
+
+      this.setState({
+        lines: this.state.lines.concat([{ line: line }]),
+        event_pos: { userA: { x1: newx, y1: newy, x2: newx, y2: newy }, userB: userB }
+      });
+    }
+
+    //Send event message to server, for example to let others know we change our line direction
+
+  }, {
     key: 'sendMessage',
     value: function sendMessage(message) {
       socket.emit('clientmessage', message);
     }
+
+    //We received event with real text message from server, for example send chat message (in the future to build)
+
   }, {
     key: 'receiveMessage',
     value: function receiveMessage(server_msg) {
       this.setState({ event_msg: { message: server_msg } });
     }
+
+    //We receive position of all player lines each .. period
+
   }, {
     key: 'receivePositions',
     value: function receivePositions(positions) {
 
-      var w = window.innerWidth;
+      var w = window.innerWidth; //Positions are based on a 1000x1000 blocks virtual field, translate to real window size
       var h = window.innerHeight;
       var p1x1 = w / 1000 * positions.userA.x1;
       var p1y1 = h / 1000 * positions.userA.y1;
@@ -374,6 +437,9 @@ var LineIO = function (_React$Component) {
 
       this.setState({ event_pos: { userA: { x1: p1x1, y1: p1y1, x2: p1x2, y2: p1y2 }, userB: { x1: p2x1, y1: p2y1, x2: p2x2, y2: p2y2 } } });
     }
+
+    //Click on element handling, not used at this moment
+
   }, {
     key: 'handleClick',
     value: function handleClick(e) {
@@ -381,13 +447,21 @@ var LineIO = function (_React$Component) {
       //console.log("Client is sending message after click");
       this.sendMessage({ type: 'userMessage', message: 'This is an event from client to server after a click' });
     }
+
+    //Render our game initially with 2 players each having 1 line
+
   }, {
     key: 'render',
     value: function render() {
-
       return _react2.default.createElement(
         'div',
         { className: 'Lineio' },
+        this.state.lines.map(function (item, index) {
+          return _react2.default.createElement(_Line2.default, {
+            key: index,
+            from: { x: item.line.userA.x1, y: item.line.userA.y1 },
+            to: { x: item.line.userA.x2, y: item.line.userA.y2 }, style: '5px solid orange' });
+        }),
         _react2.default.createElement(_Line2.default, {
           from: { x: this.state.event_pos.userA.x1, y: this.state.event_pos.userA.y1 },
           to: { x: this.state.event_pos.userA.x2, y: this.state.event_pos.userA.y2 }, style: '5px solid orange' }),
@@ -404,21 +478,7 @@ var LineIO = function (_React$Component) {
   }]);
 
   return LineIO;
-}(_react2.default.Component);
-
-//This works, removing later
-//<div className="Lineio">
-//<a href="#" onClick={ (e) => this.handleClick(e) }>Click me</a>
-//<h1>Message: {this.state.event_msg.message} </h1>
-//<Line from={{x: this.state.x1, y: this.state.y2}} to={{x: this.state.x2, y: this.state.y2}} style="5px solid orange"/>
-// </div>
-
-
-//Use this code to pass socket to client
-//<Child
-//        socket = { socket }
-//        sendMessage = { this.sendMessage }
-//      />
+}(_react2.default.Component)) || _class;
 
 LineIO.propTypes = {
   url: _react2.default.PropTypes.string };
@@ -428,7 +488,27 @@ LineIO.defaultProps = {
 };
 
 exports.default = LineIO;
-},{"./Line":4,"react":213,"socket.io-client":214}],6:[function(require,module,exports){
+
+//Below just some temporary code we might be needed later. To remove sometime:
+//{this.state.lines.map((item,index) => (<h1 key={index}>{item.command}</h1> )) }
+
+//this.state.map((item) => (
+//                        <SampleComponent key={item.id} name={item.name}/>
+//                    ))
+
+//This works, removing later
+//<div className="Lineio">
+//<a href="#" onClick={ (e) => this.handleClick(e) }>Click me</a>
+//<h1>Message: {this.state.event_msg.message} </h1>
+//<Line from={{x: this.state.x1, y: this.state.y2}} to={{x: this.state.x2, y: this.state.y2}} style="5px solid orange"/>
+// </div>
+
+//Use this code to pass socket to client
+//<Child
+//        socket = { socket }
+//        sendMessage = { this.sendMessage }
+//      />
+},{"./Line":4,"react":227,"react-keydown":194,"socket.io-client":228}],6:[function(require,module,exports){
 module.exports = after
 
 function after(count, callback, err_cb) {
@@ -2828,7 +2908,7 @@ Polling.prototype.uri = function () {
   return schema + '://' + (ipv6 ? '[' + this.hostname + ']' : this.hostname) + port + this.path + query;
 };
 
-},{"../transport":17,"component-inherit":13,"debug":25,"engine.io-parser":27,"parseqs":60,"xmlhttprequest-ssl":23,"yeast":230}],22:[function(require,module,exports){
+},{"../transport":17,"component-inherit":13,"debug":25,"engine.io-parser":27,"parseqs":60,"xmlhttprequest-ssl":23,"yeast":244}],22:[function(require,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -3117,7 +3197,7 @@ WS.prototype.check = function () {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../transport":17,"component-inherit":13,"debug":25,"engine.io-parser":27,"parseqs":60,"ws":1,"yeast":230}],23:[function(require,module,exports){
+},{"../transport":17,"component-inherit":13,"debug":25,"engine.io-parser":27,"parseqs":60,"ws":1,"yeast":244}],23:[function(require,module,exports){
 (function (global){
 // browser shim for xmlhttprequest module
 
@@ -4319,7 +4399,7 @@ exports.decodePayloadAsBinary = function (data, binaryType, callback) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./keys":28,"after":6,"arraybuffer.slice":7,"base64-arraybuffer":9,"blob":10,"has-binary":52,"wtf-8":229}],28:[function(require,module,exports){
+},{"./keys":28,"after":6,"arraybuffer.slice":7,"base64-arraybuffer":9,"blob":10,"has-binary":52,"wtf-8":243}],28:[function(require,module,exports){
 
 /**
  * Gets the keys for an object.
@@ -10484,7 +10564,7 @@ var LinkedValueUtils = {
 
 module.exports = LinkedValueUtils;
 }).call(this,require('_process'))
-},{"./ReactPropTypesSecret":132,"./reactProdInvariant":182,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"react/lib/React":191}],86:[function(require,module,exports){
+},{"./ReactPropTypesSecret":132,"./reactProdInvariant":182,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"react/lib/React":205}],86:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -11094,7 +11174,7 @@ var ReactChildReconciler = {
 
 module.exports = ReactChildReconciler;
 }).call(this,require('_process'))
-},{"./KeyEscapeUtils":84,"./ReactReconciler":134,"./instantiateReactComponent":178,"./shouldUpdateReactComponent":186,"./traverseAllChildren":187,"_process":2,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":195}],89:[function(require,module,exports){
+},{"./KeyEscapeUtils":84,"./ReactReconciler":134,"./instantiateReactComponent":178,"./shouldUpdateReactComponent":186,"./traverseAllChildren":187,"_process":2,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":209}],89:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -12076,7 +12156,7 @@ var ReactCompositeComponent = {
 
 module.exports = ReactCompositeComponent;
 }).call(this,require('_process'))
-},{"./ReactComponentEnvironment":90,"./ReactErrorUtils":115,"./ReactInstanceMap":123,"./ReactInstrumentation":124,"./ReactNodeTypes":129,"./ReactReconciler":134,"./checkReactTypeSpec":161,"./reactProdInvariant":182,"./shouldUpdateReactComponent":186,"_process":2,"fbjs/lib/emptyObject":37,"fbjs/lib/invariant":44,"fbjs/lib/shallowEqual":50,"fbjs/lib/warning":51,"object-assign":58,"react/lib/React":191,"react/lib/ReactCurrentOwner":196}],92:[function(require,module,exports){
+},{"./ReactComponentEnvironment":90,"./ReactErrorUtils":115,"./ReactInstanceMap":123,"./ReactInstrumentation":124,"./ReactNodeTypes":129,"./ReactReconciler":134,"./checkReactTypeSpec":161,"./reactProdInvariant":182,"./shouldUpdateReactComponent":186,"_process":2,"fbjs/lib/emptyObject":37,"fbjs/lib/invariant":44,"fbjs/lib/shallowEqual":50,"fbjs/lib/warning":51,"object-assign":58,"react/lib/React":205,"react/lib/ReactCurrentOwner":210}],92:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -13907,7 +13987,7 @@ var ReactDOMInvalidARIAHook = {
 
 module.exports = ReactDOMInvalidARIAHook;
 }).call(this,require('_process'))
-},{"./DOMProperty":73,"_process":2,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":195}],102:[function(require,module,exports){
+},{"./DOMProperty":73,"_process":2,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":209}],102:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -13952,7 +14032,7 @@ var ReactDOMNullInputValuePropHook = {
 
 module.exports = ReactDOMNullInputValuePropHook;
 }).call(this,require('_process'))
-},{"_process":2,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":195}],103:[function(require,module,exports){
+},{"_process":2,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":209}],103:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -14077,7 +14157,7 @@ var ReactDOMOption = {
 
 module.exports = ReactDOMOption;
 }).call(this,require('_process'))
-},{"./ReactDOMComponentTree":95,"./ReactDOMSelect":104,"_process":2,"fbjs/lib/warning":51,"object-assign":58,"react/lib/React":191}],104:[function(require,module,exports){
+},{"./ReactDOMComponentTree":95,"./ReactDOMSelect":104,"_process":2,"fbjs/lib/warning":51,"object-assign":58,"react/lib/React":205}],104:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -15065,7 +15145,7 @@ var ReactDOMUnknownPropertyHook = {
 
 module.exports = ReactDOMUnknownPropertyHook;
 }).call(this,require('_process'))
-},{"./DOMProperty":73,"./EventPluginRegistry":79,"_process":2,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":195}],110:[function(require,module,exports){
+},{"./DOMProperty":73,"./EventPluginRegistry":79,"_process":2,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":209}],110:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2016-present, Facebook, Inc.
@@ -15428,7 +15508,7 @@ if (/[?&]react_perf\b/.test(url)) {
 
 module.exports = ReactDebugTool;
 }).call(this,require('_process'))
-},{"./ReactHostOperationHistoryHook":120,"./ReactInvalidSetStateWarningHook":125,"_process":2,"fbjs/lib/ExecutionEnvironment":30,"fbjs/lib/performanceNow":49,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":195}],111:[function(require,module,exports){
+},{"./ReactHostOperationHistoryHook":120,"./ReactInvalidSetStateWarningHook":125,"_process":2,"fbjs/lib/ExecutionEnvironment":30,"fbjs/lib/performanceNow":49,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":209}],111:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16894,7 +16974,7 @@ var ReactMount = {
 
 module.exports = ReactMount;
 }).call(this,require('_process'))
-},{"./DOMLazyTree":71,"./DOMProperty":73,"./ReactBrowserEventEmitter":87,"./ReactDOMComponentTree":95,"./ReactDOMContainerInfo":96,"./ReactDOMFeatureFlags":98,"./ReactFeatureFlags":118,"./ReactInstanceMap":123,"./ReactInstrumentation":124,"./ReactMarkupChecksum":126,"./ReactReconciler":134,"./ReactUpdateQueue":138,"./ReactUpdates":139,"./instantiateReactComponent":178,"./reactProdInvariant":182,"./setInnerHTML":184,"./shouldUpdateReactComponent":186,"_process":2,"fbjs/lib/emptyObject":37,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"react/lib/React":191,"react/lib/ReactCurrentOwner":196}],128:[function(require,module,exports){
+},{"./DOMLazyTree":71,"./DOMProperty":73,"./ReactBrowserEventEmitter":87,"./ReactDOMComponentTree":95,"./ReactDOMContainerInfo":96,"./ReactDOMFeatureFlags":98,"./ReactFeatureFlags":118,"./ReactInstanceMap":123,"./ReactInstrumentation":124,"./ReactMarkupChecksum":126,"./ReactReconciler":134,"./ReactUpdateQueue":138,"./ReactUpdates":139,"./instantiateReactComponent":178,"./reactProdInvariant":182,"./setInnerHTML":184,"./shouldUpdateReactComponent":186,"_process":2,"fbjs/lib/emptyObject":37,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"react/lib/React":205,"react/lib/ReactCurrentOwner":210}],128:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -17346,7 +17426,7 @@ var ReactMultiChild = {
 
 module.exports = ReactMultiChild;
 }).call(this,require('_process'))
-},{"./ReactChildReconciler":88,"./ReactComponentEnvironment":90,"./ReactInstanceMap":123,"./ReactInstrumentation":124,"./ReactReconciler":134,"./flattenChildren":166,"./reactProdInvariant":182,"_process":2,"fbjs/lib/emptyFunction":36,"fbjs/lib/invariant":44,"react/lib/ReactCurrentOwner":196}],129:[function(require,module,exports){
+},{"./ReactChildReconciler":88,"./ReactComponentEnvironment":90,"./ReactInstanceMap":123,"./ReactInstrumentation":124,"./ReactReconciler":134,"./flattenChildren":166,"./reactProdInvariant":182,"_process":2,"fbjs/lib/emptyFunction":36,"fbjs/lib/invariant":44,"react/lib/ReactCurrentOwner":210}],129:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -17388,7 +17468,7 @@ var ReactNodeTypes = {
 
 module.exports = ReactNodeTypes;
 }).call(this,require('_process'))
-},{"./reactProdInvariant":182,"_process":2,"fbjs/lib/invariant":44,"react/lib/React":191}],130:[function(require,module,exports){
+},{"./reactProdInvariant":182,"_process":2,"fbjs/lib/invariant":44,"react/lib/React":205}],130:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -18428,7 +18508,7 @@ var ReactUpdateQueue = {
 
 module.exports = ReactUpdateQueue;
 }).call(this,require('_process'))
-},{"./ReactInstanceMap":123,"./ReactInstrumentation":124,"./ReactUpdates":139,"./reactProdInvariant":182,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"react/lib/ReactCurrentOwner":196}],139:[function(require,module,exports){
+},{"./ReactInstanceMap":123,"./ReactInstrumentation":124,"./ReactUpdates":139,"./reactProdInvariant":182,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"react/lib/ReactCurrentOwner":210}],139:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -20710,7 +20790,7 @@ function checkReactTypeSpec(typeSpecs, values, location, componentName, element,
 
 module.exports = checkReactTypeSpec;
 }).call(this,require('_process'))
-},{"./ReactPropTypeLocationNames":131,"./ReactPropTypesSecret":132,"./reactProdInvariant":182,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":195}],162:[function(require,module,exports){
+},{"./ReactPropTypeLocationNames":131,"./ReactPropTypesSecret":132,"./reactProdInvariant":182,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":209}],162:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -21008,7 +21088,7 @@ function findDOMNode(componentOrElement) {
 
 module.exports = findDOMNode;
 }).call(this,require('_process'))
-},{"./ReactDOMComponentTree":95,"./ReactInstanceMap":123,"./getHostComponentFromComposite":172,"./reactProdInvariant":182,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"react/lib/ReactCurrentOwner":196}],166:[function(require,module,exports){
+},{"./ReactDOMComponentTree":95,"./ReactInstanceMap":123,"./getHostComponentFromComposite":172,"./reactProdInvariant":182,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"react/lib/ReactCurrentOwner":210}],166:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -21086,7 +21166,7 @@ function flattenChildren(children, selfDebugID) {
 
 module.exports = flattenChildren;
 }).call(this,require('_process'))
-},{"./KeyEscapeUtils":84,"./traverseAllChildren":187,"_process":2,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":195}],167:[function(require,module,exports){
+},{"./KeyEscapeUtils":84,"./traverseAllChildren":187,"_process":2,"fbjs/lib/warning":51,"react/lib/ReactComponentTreeHook":209}],167:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -22329,7 +22409,7 @@ function traverseAllChildren(children, callback, traverseContext) {
 
 module.exports = traverseAllChildren;
 }).call(this,require('_process'))
-},{"./KeyEscapeUtils":84,"./ReactElementSymbol":113,"./getIteratorFn":173,"./reactProdInvariant":182,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"react/lib/ReactCurrentOwner":196}],188:[function(require,module,exports){
+},{"./KeyEscapeUtils":84,"./ReactElementSymbol":113,"./getIteratorFn":173,"./reactProdInvariant":182,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"react/lib/ReactCurrentOwner":210}],188:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2015-present, Facebook, Inc.
@@ -22714,10 +22794,1200 @@ if (process.env.NODE_ENV !== 'production') {
 module.exports = validateDOMNesting;
 }).call(this,require('_process'))
 },{"_process":2,"fbjs/lib/emptyFunction":36,"fbjs/lib/warning":51,"object-assign":58}],189:[function(require,module,exports){
+/**
+ * @module componentWrapper
+ *
+ */
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+var _get = function get(_x2, _x3, _x4) { var _again = true; _function: while (_again) { var object = _x2, property = _x3, receiver = _x4; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x2 = parent; _x3 = property; _x4 = receiver; _again = true; desc = parent = undefined; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _store = require('../store');
+
+var _store2 = _interopRequireDefault(_store);
+
+var _event_handlers = require('../event_handlers');
+
+/**
+ * componentWrapper
+ *
+ * @access public
+ * @param {object} WrappedComponent React component class to be wrapped
+ * @param {array} [keys] The key(s) bound to the class
+ * @return {object} The higher-order function that wraps the decorated class
+ */
+function componentWrapper(WrappedComponent) {
+  var keys = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+
+  var KeyBoardHelper = (function (_React$Component) {
+    _inherits(KeyBoardHelper, _React$Component);
+
+    function KeyBoardHelper(props) {
+      _classCallCheck(this, KeyBoardHelper);
+
+      _get(Object.getPrototypeOf(KeyBoardHelper.prototype), 'constructor', this).call(this, props);
+      this.state = {
+        event: null
+      };
+    }
+
+    _createClass(KeyBoardHelper, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        (0, _event_handlers.onMount)(this);
+      }
+    }, {
+      key: 'componentWillUnmount',
+      value: function componentWillUnmount() {
+        (0, _event_handlers.onUnmount)(this);
+      }
+    }, {
+      key: 'handleKeyDown',
+      value: function handleKeyDown(event) {
+        var _this = this;
+
+        // to simulate a keypress, set the event and then clear it in the callback
+        this.setState({ event: event }, function () {
+          return _this.setState({ event: null });
+        });
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        return _react2['default'].createElement(WrappedComponent, _extends({}, this.props, { keydown: this.state }));
+      }
+    }]);
+
+    return KeyBoardHelper;
+  })(_react2['default'].Component);
+
+  _store2['default'].setBinding({ keys: keys, fn: KeyBoardHelper.prototype.handleKeyDown, target: KeyBoardHelper.prototype });
+
+  return KeyBoardHelper;
+}
+
+exports['default'] = componentWrapper;
+module.exports = exports['default'];
+},{"../event_handlers":193,"../store":202,"react":227}],190:[function(require,module,exports){
+/**
+ * @module decorators
+ *
+ */
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _class_decorator = require('./class_decorator');
+
+var _class_decorator2 = _interopRequireDefault(_class_decorator);
+
+var _method_decorator = require('./method_decorator');
+
+var _method_decorator2 = _interopRequireDefault(_method_decorator);
+
+var _method_decorator_scoped = require('./method_decorator_scoped');
+
+var _method_decorator_scoped2 = _interopRequireDefault(_method_decorator_scoped);
+
+/**
+ * _decorator
+ *
+ * @access private
+ * @param {Function} methodFn The method wrapper to delegate to, based on whether user has specified a scoped decorator or not
+ * @param {Array} ...args Remainder of arguments passed in
+ * @return {Function} The decorated class or method
+ */
+function _decorator(methodFn) {
+  for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    args[_key - 1] = arguments[_key];
+  }
+
+  // check the first argument to see if it's a user-supplied keycode or array
+  // of keycodes, or if it's the wrapped class or method
+  var testArg = args[0];
+  var isArray = Array.isArray(testArg);
+
+  // if the test argument is not an object or function, it is user-supplied
+  // keycodes. else there are no arguments and it's just the wrapped class
+  // (method decorators must have keycode arguments).
+  if (isArray || ~['string', 'number'].indexOf(typeof testArg)) {
+    var _ret = (function () {
+      var keys = isArray ? testArg : args;
+
+      // return the decorator function, which on the next call will look for
+      // the presence of a method name to determine if this is a wrapped method
+      // or component
+      return {
+        v: function (target, methodName, descriptor) {
+          return methodName ? methodFn({ target: target, descriptor: descriptor, keys: keys }) : (0, _class_decorator2['default'])(target, keys);
+        }
+      };
+    })();
+
+    if (typeof _ret === 'object') return _ret.v;
+  } else {
+    var methodName = args[1];
+
+    // method decorators without keycode (which) arguments are not allowed.
+    if (!methodName) {
+      return _class_decorator2['default'].apply(undefined, args);
+    } else {
+      console.warn(methodName + ': Method decorators must have keycode arguments, so the decorator for this method will not do anything');
+    }
+  }
+}
+
+/**
+ * keydownScoped
+ *
+ * Method decorator that will look for changes to its targeted component's
+ * `keydown` props to decide when to trigger, rather than responding directly
+ * to keydown events. This lets you specify a @keydown decorated class higher
+ * up in the view hierarchy for larger scoping of keydown events, or for
+ * programmatically sending keydown events as props into the components in order
+ * to trigger decorated methods with matching keys.
+ *
+ * @access public
+ * @param {Array} ...args  All (or no) arguments passed in from decoration
+ * @return {Function} The decorated class or method
+ */
+function keydownScoped() {
+  for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+    args[_key2] = arguments[_key2];
+  }
+
+  return _decorator.apply(undefined, [_method_decorator_scoped2['default']].concat(args));
+}
+
+/**
+ * keydown
+ *
+ * The main decorator and default export, handles both classes and methods.
+ *
+ * @access public
+ * @param {Array} ...args  All (or no) arguments passed in from decoration
+ * @return {Function} The decorated class or method
+ */
+function keydown() {
+  for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+    args[_key3] = arguments[_key3];
+  }
+
+  return _decorator.apply(undefined, [_method_decorator2['default']].concat(args));
+}
+
+exports['default'] = keydown;
+exports.keydownScoped = keydownScoped;
+},{"./class_decorator":189,"./method_decorator":191,"./method_decorator_scoped":192}],191:[function(require,module,exports){
+/**
+ * @module methodWrapper
+ *
+ */
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _store = require('../store');
+
+var _store2 = _interopRequireDefault(_store);
+
+var _event_handlers = require('../event_handlers');
+
+/**
+ * _isReactKeyDown
+ *
+ * @access private
+ * @param {object} event The possibly synthetic event passed as an argument with
+ * the method invocation.
+ * @return {boolean}
+ */
+function _isReactKeyDown(event) {
+  return event && typeof event === 'object' && event.nativeEvent instanceof window.KeyboardEvent && event.type === 'keydown';
+}
+
+/**
+ * methodWrapper
+ *
+ * @access public
+ * @param {object} args All arguments necessary for wrapping method
+ * @param {object} args.target The decorated class
+ * @param {object} args.descriptor Method descriptor
+ * @param {array} args.keys The array of keys bound to the given method
+ * @return {object} The method descriptor
+ */
+function methodWrapper(_ref) {
+  var target = _ref.target;
+  var descriptor = _ref.descriptor;
+  var keys = _ref.keys;
+
+  var fn = descriptor.value;
+
+  // if we haven't already created a binding for this class (via another
+  // decorated method), wrap these lifecycle methods.
+  if (!_store2['default'].getBinding(target)) {
+    (function () {
+      var componentDidMount = target.componentDidMount;
+      var componentWillUnmount = target.componentWillUnmount;
+
+      target.componentDidMount = function () {
+        (0, _event_handlers.onMount)(this);
+        if (componentDidMount) return componentDidMount.call(this);
+      };
+
+      target.componentWillUnmount = function () {
+        (0, _event_handlers.onUnmount)(this);
+        if (componentWillUnmount) return componentWillUnmount.call(this);
+      };
+    })();
+  }
+
+  // add this binding of keys and method to the target's bindings
+  _store2['default'].setBinding({ keys: keys, target: target, fn: fn });
+
+  descriptor.value = function () {
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    var maybeEvent = args[0];
+
+    if (_isReactKeyDown(maybeEvent)) {
+      // proxy method in order to use @keydown as filter for keydown events coming
+      // from an actual onKeyDown binding (as identified by react's addition of
+      // 'nativeEvent' + type === 'keydown')
+      return (0, _event_handlers._onKeyDown)(maybeEvent, true);
+    } else if (!maybeEvent || !(maybeEvent instanceof window.KeyboardEvent) || maybeEvent.type !== 'keydown') {
+      // if our first argument is a keydown event it is being handled by our
+      // binding system. if it's anything else, just pass through.
+      return fn.call.apply(fn, [this].concat(args));
+    }
+  };
+
+  return descriptor;
+}
+
+exports['default'] = methodWrapper;
+module.exports = exports['default'];
+},{"../event_handlers":193,"../store":202}],192:[function(require,module,exports){
+/**
+ * @module methodWrapperScoped
+ *
+ */
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _libMatch_keys = require('../lib/match_keys');
+
+var _libMatch_keys2 = _interopRequireDefault(_libMatch_keys);
+
+var _libParse_keys = require('../lib/parse_keys');
+
+var _libParse_keys2 = _interopRequireDefault(_libParse_keys);
+
+/**
+ * _shouldTrigger
+ *
+ * @access private
+ * @param {object} thisProps Exsting props from the wrapped component
+ * @param {object} thisProps.keydown The namespaced state from the higher-order
+ * component (class_decorator)
+ * @param {object} nextProps The incoming props from the wrapped component
+ * @param {object} nextProps.keydown The namescaped state from the higher-order
+ * component (class_decorator)
+ * @param {array} keys The keys bound to the decorated method
+ * @return {boolean} Whether all tests have passed
+ */
+function _shouldTrigger(_ref, keydownNext) {
+  var keydownThis = _ref.keydown;
+
+  return keydownNext && keydownNext.event && !keydownThis.event;
+}
+
+/**
+ * methodWrapperScoped
+ *
+ * @access public
+ * @param {object} args All args necessary for decorating the method
+ * @param {object} args.target The decorated method's class object
+ * @param {object} args.descriptor The method's descriptor object
+ * @param {array} args.keys The key codes bound to the decorated method
+ * @return {object} The method's descriptor object
+ */
+function methodWrapperScoped(_ref2) {
+  var target = _ref2.target;
+  var descriptor = _ref2.descriptor;
+  var keys = _ref2.keys;
+  var componentWillReceiveProps = target.componentWillReceiveProps;
+
+  var fn = descriptor.value;
+  if (!keys) {
+    console.warn(fn + ': keydownScoped requires one or more keys');
+  } else {
+    (function () {
+      var keySets = (0, _libParse_keys2['default'])(keys);
+
+      // wrap the component's lifecycle method to intercept key codes coming down
+      // from the wrapped/scoped component up the view hierarchy. if new keydown
+      // event has arrived and the key codes match what was specified in the
+      // decorator, call the wrapped method.
+      target.componentWillReceiveProps = function (nextProps) {
+        var keydown = nextProps.keydown;
+
+        if (_shouldTrigger(this.props, keydown)) {
+          if (keySets.some(function (keySet) {
+            return (0, _libMatch_keys2['default'])({ keySet: keySet, event: keydown.event });
+          })) {
+            return fn.call(this, keydown.event);
+          }
+        }
+
+        for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+          args[_key - 1] = arguments[_key];
+        }
+
+        if (componentWillReceiveProps) return componentWillReceiveProps.call.apply(componentWillReceiveProps, [this, nextProps].concat(args));
+      };
+    })();
+  }
+
+  return descriptor;
+}
+
+exports['default'] = methodWrapperScoped;
+module.exports = exports['default'];
+},{"../lib/match_keys":199,"../lib/parse_keys":200}],193:[function(require,module,exports){
+/* eslint-disable no-use-before-define */
+/**
+ * @module eventHandlers
+ *
+ */
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports._onClick = _onClick;
+exports._onKeyDown = _onKeyDown;
+exports._shouldConsider = _shouldConsider;
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
+
+var _libDom_helpers = require('./lib/dom_helpers');
+
+var _libDom_helpers2 = _interopRequireDefault(_libDom_helpers);
+
+var _libListeners = require('./lib/listeners');
+
+var _libListeners2 = _interopRequireDefault(_libListeners);
+
+var _store = require('./store');
+
+var _store2 = _interopRequireDefault(_store);
+
+/**
+ * private
+ *
+ */
+
+/**
+ * _onClick
+ *
+ * @access private
+ * @param {object} event The click event object
+ * @param {object} event.target The DOM node from the click event
+ */
+
+function _onClick(_ref) {
+  var target = _ref.target;
+
+  _store2['default'].activate([].concat(_toConsumableArray(_store2['default'].getInstances())).reduce(_libDom_helpers2['default'].findContainerNodes(target), []).sort(_libDom_helpers2['default'].sortByDOMPosition).map(function (item) {
+    return item.instance;
+  }));
+}
+
+/**
+ * _onKeyDown: The keydown event callback
+ *
+ * @access private
+ * @param {object} event The keydown event object
+ * @param {number} event.which The key code (which) received from the keydown event
+ */
+
+function _onKeyDown(event) {
+  var forceConsider = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
+  if (forceConsider || _shouldConsider(event)) {
+    var _ref2 = _store2['default'].findBindingForEvent(event) || {};
+
+    var fn = _ref2.fn;
+    var instance = _ref2.instance;
+
+    if (fn) {
+      fn.call(instance, event);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * _shouldConsider: Conditions for proceeding with key event handling
+ *
+ * @access private
+ * @param {object} event The keydown event object
+ * @param {object} event.target The node origin of the event
+ * @param {string} event.target.tagName The name of the element tag
+ * @param {number} event.target.which The key pressed
+ * @return {boolean} Whether to continue procesing the keydown event
+ */
+
+function _shouldConsider(_ref3) {
+  var ctrlKey = _ref3.ctrlKey;
+  var tagName = _ref3.target.tagName;
+
+  return ! ~['INPUT', 'SELECT', 'TEXTAREA'].indexOf(tagName) || ctrlKey;
+}
+
+/**
+ * public
+ *
+ */
+
+/**
+ * onMount
+ *
+ * @access public
+ */
+function onMount(instance) {
+  // have to bump this to next event loop because component mounting routinely
+  // preceeds the dom click event that triggered the mount (wtf?)
+  setTimeout(function () {
+    return _store2['default'].activate(instance);
+  }, 0);
+  _libListeners2['default'].bindKeys(_onKeyDown);
+  _libListeners2['default'].bindClicks(_onClick);
+  _libDom_helpers2['default'].bindFocusables(instance, _store2['default'].activate);
+}
+
+/**
+ * onUnmount
+ *
+ * @access public
+ */
+function onUnmount(instance) {
+  _store2['default'].deleteInstance(instance);
+  if (_store2['default'].isEmpty()) {
+    _libListeners2['default'].unbindClicks(_onClick);
+    _libListeners2['default'].unbindKeys(_onKeyDown);
+  }
+}
+
+exports.onMount = onMount;
+exports.onUnmount = onUnmount;
+},{"./lib/dom_helpers":196,"./lib/listeners":198,"./store":202}],194:[function(require,module,exports){
+// polyfill array.from (mainly for IE)
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+function _interopRequire(obj) { return obj && obj.__esModule ? obj['default'] : obj; }
+
+require('./lib/array.from');
+
+// @keydown and @keydownScoped
+
+var _decorators = require('./decorators');
+
+exports['default'] = _interopRequire(_decorators);
+Object.defineProperty(exports, 'keydownScoped', {
+  enumerable: true,
+  get: function get() {
+    return _decorators.keydownScoped;
+  }
+});
+
+// setBinding - only useful if you're not going to use decorators
+
+var _store = require('./store');
+
+Object.defineProperty(exports, 'setBinding', {
+  enumerable: true,
+  get: function get() {
+    return _store.setBinding;
+  }
+});
+
+// Keys - use this to find key codes for strings. for example: Keys.j, Keys.enter
+
+var _libKeys = require('./lib/keys');
+
+exports.Keys = _interopRequire(_libKeys);
+},{"./decorators":190,"./lib/array.from":195,"./lib/keys":197,"./store":202}],195:[function(require,module,exports){
+// Production steps of ECMA-262, Edition 6, 22.1.2.1
+// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/from
+'use strict';
+
+if (!Array.from) {
+  Array.from = (function () {
+    var toStr = Object.prototype.toString;
+    var isCallable = function isCallable(fn) {
+      return typeof fn === 'function' || toStr.call(fn) === '[object Function]';
+    };
+    var toInteger = function toInteger(value) {
+      var number = Number(value);
+      if (isNaN(number)) {
+        return 0;
+      }
+      if (number === 0 || !isFinite(number)) {
+        return number;
+      }
+      return (number > 0 ? 1 : -1) * Math.floor(Math.abs(number));
+    };
+    var maxSafeInteger = Math.pow(2, 53) - 1;
+    var toLength = function toLength(value) {
+      var len = toInteger(value);
+      return Math.min(Math.max(len, 0), maxSafeInteger);
+    };
+
+    // The length property of the from method is 1.
+    return function from(arrayLike /*, mapFn, thisArg */) {
+      // 1. Let C be the this value.
+      var C = this;
+
+      // 2. Let items be ToObject(arrayLike).
+      var items = Object(arrayLike);
+
+      // 3. ReturnIfAbrupt(items).
+      if (arrayLike == null) {
+        throw new TypeError("Array.from requires an array-like object - not null or undefined");
+      }
+
+      // 4. If mapfn is undefined, then let mapping be false.
+      var mapFn = arguments.length > 1 ? arguments[1] : void undefined;
+      var T;
+      if (typeof mapFn !== 'undefined') {
+        // 5. else
+        // 5. a If IsCallable(mapfn) is false, throw a TypeError exception.
+        if (!isCallable(mapFn)) {
+          throw new TypeError('Array.from: when provided, the second argument must be a function');
+        }
+
+        // 5. b. If thisArg was supplied, let T be thisArg; else let T be undefined.
+        if (arguments.length > 2) {
+          T = arguments[2];
+        }
+      }
+
+      // 10. Let lenValue be Get(items, "length").
+      // 11. Let len be ToLength(lenValue).
+      var len = toLength(items.length);
+
+      // 13. If IsConstructor(C) is true, then
+      // 13. a. Let A be the result of calling the [[Construct]] internal method
+      // of C with an argument list containing the single item len.
+      // 14. a. Else, Let A be ArrayCreate(len).
+      var A = isCallable(C) ? Object(new C(len)) : new Array(len);
+
+      // 16. Let k be 0.
+      var k = 0;
+      // 17. Repeat, while k < len… (also steps a - h)
+      var kValue;
+      while (k < len) {
+        kValue = items[k];
+        if (mapFn) {
+          A[k] = typeof T === 'undefined' ? mapFn(kValue, k) : mapFn.call(T, kValue, k);
+        } else {
+          A[k] = kValue;
+        }
+        k += 1;
+      }
+      // 18. Let putStatus be Put(A, "length", len, true).
+      A.length = len;
+      // 20. Return A.
+      return A;
+    };
+  })();
+}
+},{}],196:[function(require,module,exports){
+/**
+ * @module domHelpers
+ *
+ */
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _reactDom = require('react-dom');
+
+var _reactDom2 = _interopRequireDefault(_reactDom);
+
+var focusableSelector = 'a[href], button, input, object, select, textarea, [tabindex]';
+
+/**
+ * bindFocusables: Find any focusable child elements of the component instance and
+ * add an onFocus handler to focus our keydown handlers on the parent component
+ * when user keys applies focus to the element.
+ *
+ * NOTE: One limitation of this right now is that if you tab out of the
+ * component, _focusedInstance will still be set until next click or mount or
+ * controlled focus.
+ *
+ * @access public
+ * @param {object} instance The key-bound component instance
+ * @param {callback} activateOnFocus The fn to fire when element is focused
+ */
+function bindFocusables(instance, activateOnFocus) {
+  if (document.querySelectorAll) {
+    var node = _reactDom2['default'].findDOMNode(instance);
+    if (node) {
+      var focusables = node.querySelectorAll(focusableSelector);
+      if (focusables.length) {
+        (function () {
+          var onFocus = function onFocus(element) {
+            var onFocusPrev = element.onfocus;
+            return function (event) {
+              activateOnFocus(instance);
+              if (onFocusPrev) onFocusPrev.call(element, event);
+            };
+          };
+          Array.prototype.slice.call(focusables).forEach(function (element) {
+            return element.onfocus = onFocus(element);
+          });
+        })();
+      }
+    }
+  }
+}
+
+/**
+ * findContainerNodes: Called by our click handler to find instances with nodes
+ * that are equal to or that contain the click target. Any that pass this test
+ * will be recipients of the next keydown event.
+ *
+ * @access public
+ * @param {object} target The click event.target DOM element
+ * @return {function} Reducer function
+ */
+function findContainerNodes(target) {
+  return function (memo, instance) {
+    try {
+      var node = _reactDom2['default'].findDOMNode(instance);
+      if (node && (node === target || node.contains(target))) {
+        memo.push({ instance: instance, node: node });
+      }
+    } finally {
+      return memo;
+    }
+  };
+}
+
+/**
+ * sortByDOMPosition: Called by our click handler to sort a list of instances
+ * according to least -> most nested. This is so that if multiple keybound
+ * instances have nodes that are ancestors of the click target, they will be
+ * sorted to let the instance closest to the click target get first dibs on the
+ * next key down event.
+ */
+function sortByDOMPosition(a, b) {
+  return a.node.compareDocumentPosition(b.node) === 10 ? 1 : -1;
+}
+
+exports['default'] = { bindFocusables: bindFocusables, findContainerNodes: findContainerNodes, sortByDOMPosition: sortByDOMPosition };
+module.exports = exports['default'];
+},{"react-dom":62}],197:[function(require,module,exports){
+// TODO: Need better, more complete, and more methodical key definitions
+
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports.allKeys = allKeys;
+var Keys = {
+  backspace: 8,
+  del: 46,
+  'delete': 46,
+  tab: 9,
+  enter: 13,
+  'return': 13,
+  esc: 27,
+  space: 32,
+  left: 37,
+  up: 38,
+  right: 39,
+  down: 40,
+  ';': 186,
+  '=': 187,
+  ',': 188,
+  '-': 189,
+  '.': 190,
+  '/': 191,
+  '`': 192,
+  '[': 219,
+  '\\': 220,
+  ']': 221
+};
+
+// Add uppercase versions of keys above for backwards compatibility
+Object.keys(Keys).forEach(function (key) {
+  return Keys[key.toUpperCase()] = Keys[key];
+});
+
+'0123456789'.split('').forEach(function (num, index) {
+  return Keys[num] = index + 48;
+});
+
+'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(function (letter, index) {
+  Keys[letter] = index + 65;
+  Keys[letter.toLowerCase()] = index + 65;
+});
+
+// fn keys
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].forEach(function (item, index) {
+  return Keys['f' + index] = 111 + index;
+});
+
+var modifiers = {
+  control: 'ctrl',
+  ctrl: 'ctrl',
+  shift: 'shift',
+  meta: 'meta',
+  cmd: 'meta',
+  command: 'meta',
+  option: 'alt',
+  alt: 'alt'
+};
+
+exports.modifiers = modifiers;
+
+function allKeys(arg) {
+  return arg ? typeof arg === 'symbol' : Symbol('allKeys');
+}
+
+exports['default'] = Keys;
+},{}],198:[function(require,module,exports){
+/**
+ * @module Listeners
+ *
+ */
+
+// flag for whether click listener has been bound to document
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+var _clicksBound = false;
+
+// flag for whether keydown listener has been bound to document
+var _keysBound = false;
+
+var Listeners = {
+  /**
+   * _bindKeys
+   *
+   * @access public
+   */
+  bindKeys: function bindKeys(callback) {
+    if (!_keysBound) {
+      document.addEventListener('keydown', callback);
+      _keysBound = true;
+    }
+  },
+
+  /**
+   * unbindKeys
+   *
+   * @access public
+   */
+  unbindKeys: function unbindKeys(callback) {
+    if (_keysBound) {
+      document.removeEventListener('keydown', callback);
+      _keysBound = false;
+    }
+  },
+
+  /**
+   * bindClicks
+   *
+   * @access public
+   */
+  bindClicks: function bindClicks(callback) {
+    if (!_clicksBound) {
+      document.addEventListener('click', callback);
+      _clicksBound = true;
+    }
+  },
+
+  /**
+   * unbindClicks
+   *
+   * @access public
+   */
+  unbindClicks: function unbindClicks(callback) {
+    if (_clicksBound) {
+      document.removeEventListener('click', callback);
+      _clicksBound = false;
+    }
+  }
+};
+
+exports['default'] = Listeners;
+module.exports = exports['default'];
+},{}],199:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+var _keys = require('./keys');
+
+var modKeys = Object.keys(_keys.modifiers);
+
+function matchKeys(_ref) {
+  var _ref$keySet = _ref.keySet;
+  var key = _ref$keySet.key;
+  var _ref$keySet$modifiers = _ref$keySet.modifiers;
+  var modifiers = _ref$keySet$modifiers === undefined ? [] : _ref$keySet$modifiers;
+  var event = _ref.event;
+
+  var keysMatch = false;
+  if (key === event.which) {
+    (function () {
+      var evtModKeys = modKeys.filter(function (modKey) {
+        return event[modKey + 'Key'];
+      }).sort();
+      keysMatch = modifiers.length === evtModKeys.length && modifiers.every(function (modKey, index) {
+        return evtModKeys[index] === modKey;
+      });
+    })();
+  }
+  return keysMatch;
+}
+
+exports['default'] = matchKeys;
+module.exports = exports['default'];
+},{"./keys":197}],200:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _keys = require('./keys');
+
+var _keys2 = _interopRequireDefault(_keys);
+
+function parseKeys(keysArray) {
+  return keysArray.map(function (key) {
+    var keySet = { key: key };
+    if (typeof key === 'string') {
+      var keyString = key.toLowerCase().trim();
+      var matches = keyString.split(/\s?\+\s?/);
+      keySet = matches.length === 1 ? { key: _keys2['default'][keyString] } : {
+        key: _keys2['default'][matches.pop()],
+        modifiers: matches.map(function (modKey) {
+          return _keys.modifiers[modKey];
+        }).sort()
+      };
+    }
+    return keySet;
+  });
+}
+
+exports['default'] = parseKeys;
+module.exports = exports['default'];
+},{"./keys":197}],201:[function(require,module,exports){
+// Counter being incremented. JS is single-threaded, so it'll Just Work™.
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = uuid;
+var __counter = 1;
+
+/**
+ * Returns a process-wide unique identifier.
+ */
+
+function uuid() {
+  return "uid-" + __counter++;
+}
+
+module.exports = exports["default"];
+},{}],202:[function(require,module,exports){
+/**
+ * @module store
+ *
+ */
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
+
+exports._resetStore = _resetStore;
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
+
+var _libKeys = require('./lib/keys');
+
+var _libMatch_keys = require('./lib/match_keys');
+
+var _libMatch_keys2 = _interopRequireDefault(_libMatch_keys);
+
+var _libParse_keys = require('./lib/parse_keys');
+
+var _libParse_keys2 = _interopRequireDefault(_libParse_keys);
+
+var _libUuid = require('./lib/uuid');
+
+var _libUuid2 = _interopRequireDefault(_libUuid);
+
+/**
+ * private
+ * 
+ */
+
+// dict for class prototypes => bindings
+var _handlers = new Map();
+
+// all mounted instances that have keybindings
+var _instances = new Set();
+
+// for testing
+
+function _resetStore() {
+  _handlers.clear();
+  _instances.clear();
+}
+
+/**
+ * public
+ *
+ */
+
+var Store = {
+
+  /**
+   * activate
+   *
+   * @access public
+   * @param {object} instance Instantiated class that extended React.Component, to be focused to receive keydown events
+   */
+  activate: function activate(instances) {
+    var instancesArray = [].concat(instances);
+
+    // if no components were found as ancestors of the event target,
+    // effectively deactivate keydown handling by capping the set of instances
+    // with `null`.
+    if (!instancesArray.length) {
+      _instances.add(null);
+    } else {
+      _instances['delete'](null);
+
+      // deleting and then adding the instance(s) has the effect of sorting the set
+      // according to instance activation (ascending)
+      instancesArray.forEach(function (instance) {
+        _instances['delete'](instance);
+        _instances.add(instance);
+      });
+    }
+  },
+
+  /**
+   * deleteInstance
+   *
+   * @access public
+   * @param {object} target Instantiated class that extended React.Component
+   * @return {boolean} The value set.has( target ) would have returned prior to deletion
+   */
+  deleteInstance: function deleteInstance(target) {
+    _instances['delete'](target);
+  },
+
+  findBindingForEvent: function findBindingForEvent(event) {
+    if (!_instances.has(null)) {
+      var keyMatchesEvent = function keyMatchesEvent(keySet) {
+        return (0, _libMatch_keys2['default'])({ keySet: keySet, event: event });
+      };
+
+      // loop through instances in reverse activation order so that most
+      // recently activated instance gets first dibs on event
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = [].concat(_toConsumableArray(_instances)).reverse()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var instance = _step.value;
+
+          var bindings = this.getBinding(instance.constructor.prototype);
+          var _iteratorNormalCompletion2 = true;
+          var _didIteratorError2 = false;
+          var _iteratorError2 = undefined;
+
+          try {
+            for (var _iterator2 = bindings[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+              var _step2$value = _slicedToArray(_step2.value, 2);
+
+              var keySets = _step2$value[0];
+              var fn = _step2$value[1];
+
+              if ((0, _libKeys.allKeys)(keySets) || keySets.some(keyMatchesEvent)) {
+                // return when matching keybinding is found - i.e. only one
+                // keybound component can respond to a given key code. to get around this,
+                // scope a common ancestor component class with @keydown and use
+                // @keydownScoped to bind the duplicate keys in your child components
+                // (or just inspect nextProps.keydown.event).
+                return { fn: fn, instance: instance };
+              }
+            }
+          } catch (err) {
+            _didIteratorError2 = true;
+            _iteratorError2 = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion2 && _iterator2['return']) {
+                _iterator2['return']();
+              }
+            } finally {
+              if (_didIteratorError2) {
+                throw _iteratorError2;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator['return']) {
+            _iterator['return']();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
+    }
+    return null;
+  },
+
+  /**
+   * getBinding
+   *
+   * @access public
+   * @param {object} target Class used as key in dict of key bindings
+   * @return {object} The object containing bindings for the given class
+   */
+  getBinding: function getBinding(_ref) {
+    var __reactKeydownUUID = _ref.__reactKeydownUUID;
+
+    return _handlers.get(__reactKeydownUUID);
+  },
+
+  /**
+   * getInstances
+   *
+   * @access public
+   * @return {set} All stored instances (all mounted component instances with keybindings)
+   */
+  getInstances: function getInstances() {
+    return _instances;
+  },
+
+  /**
+   * isEmpty
+   *
+   * @access public
+   * @return {number} Size of the set of all stored instances
+   */
+  isEmpty: function isEmpty() {
+    return !_instances.size;
+  },
+
+  /**
+   * setBinding
+   *
+   * @access public
+   * @param {object} args All arguments necessary to set the binding
+   * @param {array} args.keys Key codes that should trigger the fn
+   * @param {function} args.fn The callback to be triggered when given keys are pressed
+   * @param {object} args.target The decorated class
+   */
+  setBinding: function setBinding(_ref2) {
+    var keys = _ref2.keys;
+    var fn = _ref2.fn;
+    var target = _ref2.target;
+
+    var keySets = keys ? (0, _libParse_keys2['default'])(keys) : (0, _libKeys.allKeys)();
+    var __reactKeydownUUID = target.__reactKeydownUUID;
+
+    if (!__reactKeydownUUID) {
+      target.__reactKeydownUUID = (0, _libUuid2['default'])();
+      _handlers.set(target.__reactKeydownUUID, new Map([[keySets, fn]]));
+    } else {
+      _handlers.get(__reactKeydownUUID).set(keySets, fn);
+    }
+  }
+};
+
+exports['default'] = Store;
+},{"./lib/keys":197,"./lib/match_keys":199,"./lib/parse_keys":200,"./lib/uuid":201}],203:[function(require,module,exports){
 arguments[4][84][0].apply(exports,arguments)
-},{"dup":84}],190:[function(require,module,exports){
+},{"dup":84}],204:[function(require,module,exports){
 arguments[4][86][0].apply(exports,arguments)
-},{"./reactProdInvariant":211,"_process":2,"dup":86,"fbjs/lib/invariant":44}],191:[function(require,module,exports){
+},{"./reactProdInvariant":225,"_process":2,"dup":86,"fbjs/lib/invariant":44}],205:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -22808,7 +24078,7 @@ var React = {
 
 module.exports = React;
 }).call(this,require('_process'))
-},{"./ReactChildren":192,"./ReactClass":193,"./ReactComponent":194,"./ReactDOMFactories":197,"./ReactElement":198,"./ReactElementValidator":200,"./ReactPropTypes":203,"./ReactPureComponent":205,"./ReactVersion":206,"./onlyChild":210,"_process":2,"fbjs/lib/warning":51,"object-assign":58}],192:[function(require,module,exports){
+},{"./ReactChildren":206,"./ReactClass":207,"./ReactComponent":208,"./ReactDOMFactories":211,"./ReactElement":212,"./ReactElementValidator":214,"./ReactPropTypes":217,"./ReactPureComponent":219,"./ReactVersion":220,"./onlyChild":224,"_process":2,"fbjs/lib/warning":51,"object-assign":58}],206:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -22999,7 +24269,7 @@ var ReactChildren = {
 };
 
 module.exports = ReactChildren;
-},{"./PooledClass":190,"./ReactElement":198,"./traverseAllChildren":212,"fbjs/lib/emptyFunction":36}],193:[function(require,module,exports){
+},{"./PooledClass":204,"./ReactElement":212,"./traverseAllChildren":226,"fbjs/lib/emptyFunction":36}],207:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -23718,7 +24988,7 @@ var ReactClass = {
 
 module.exports = ReactClass;
 }).call(this,require('_process'))
-},{"./ReactComponent":194,"./ReactElement":198,"./ReactNoopUpdateQueue":201,"./ReactPropTypeLocationNames":202,"./reactProdInvariant":211,"_process":2,"fbjs/lib/emptyObject":37,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"object-assign":58}],194:[function(require,module,exports){
+},{"./ReactComponent":208,"./ReactElement":212,"./ReactNoopUpdateQueue":215,"./ReactPropTypeLocationNames":216,"./reactProdInvariant":225,"_process":2,"fbjs/lib/emptyObject":37,"fbjs/lib/invariant":44,"fbjs/lib/warning":51,"object-assign":58}],208:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -23838,7 +25108,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = ReactComponent;
 }).call(this,require('_process'))
-},{"./ReactNoopUpdateQueue":201,"./canDefineProperty":207,"./reactProdInvariant":211,"_process":2,"fbjs/lib/emptyObject":37,"fbjs/lib/invariant":44,"fbjs/lib/warning":51}],195:[function(require,module,exports){
+},{"./ReactNoopUpdateQueue":215,"./canDefineProperty":221,"./reactProdInvariant":225,"_process":2,"fbjs/lib/emptyObject":37,"fbjs/lib/invariant":44,"fbjs/lib/warning":51}],209:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2016-present, Facebook, Inc.
@@ -24174,7 +25444,7 @@ var ReactComponentTreeHook = {
 
 module.exports = ReactComponentTreeHook;
 }).call(this,require('_process'))
-},{"./ReactCurrentOwner":196,"./reactProdInvariant":211,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51}],196:[function(require,module,exports){
+},{"./ReactCurrentOwner":210,"./reactProdInvariant":225,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51}],210:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -24205,7 +25475,7 @@ var ReactCurrentOwner = {
 };
 
 module.exports = ReactCurrentOwner;
-},{}],197:[function(require,module,exports){
+},{}],211:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -24377,7 +25647,7 @@ var ReactDOMFactories = {
 
 module.exports = ReactDOMFactories;
 }).call(this,require('_process'))
-},{"./ReactElement":198,"./ReactElementValidator":200,"_process":2}],198:[function(require,module,exports){
+},{"./ReactElement":212,"./ReactElementValidator":214,"_process":2}],212:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-present, Facebook, Inc.
@@ -24720,9 +25990,9 @@ ReactElement.isValidElement = function (object) {
 
 module.exports = ReactElement;
 }).call(this,require('_process'))
-},{"./ReactCurrentOwner":196,"./ReactElementSymbol":199,"./canDefineProperty":207,"_process":2,"fbjs/lib/warning":51,"object-assign":58}],199:[function(require,module,exports){
+},{"./ReactCurrentOwner":210,"./ReactElementSymbol":213,"./canDefineProperty":221,"_process":2,"fbjs/lib/warning":51,"object-assign":58}],213:[function(require,module,exports){
 arguments[4][113][0].apply(exports,arguments)
-},{"dup":113}],200:[function(require,module,exports){
+},{"dup":113}],214:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-present, Facebook, Inc.
@@ -24951,7 +26221,7 @@ var ReactElementValidator = {
 
 module.exports = ReactElementValidator;
 }).call(this,require('_process'))
-},{"./ReactComponentTreeHook":195,"./ReactCurrentOwner":196,"./ReactElement":198,"./canDefineProperty":207,"./checkReactTypeSpec":208,"./getIteratorFn":209,"_process":2,"fbjs/lib/warning":51}],201:[function(require,module,exports){
+},{"./ReactComponentTreeHook":209,"./ReactCurrentOwner":210,"./ReactElement":212,"./canDefineProperty":221,"./checkReactTypeSpec":222,"./getIteratorFn":223,"_process":2,"fbjs/lib/warning":51}],215:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2015-present, Facebook, Inc.
@@ -25049,9 +26319,9 @@ var ReactNoopUpdateQueue = {
 
 module.exports = ReactNoopUpdateQueue;
 }).call(this,require('_process'))
-},{"_process":2,"fbjs/lib/warning":51}],202:[function(require,module,exports){
+},{"_process":2,"fbjs/lib/warning":51}],216:[function(require,module,exports){
 arguments[4][131][0].apply(exports,arguments)
-},{"_process":2,"dup":131}],203:[function(require,module,exports){
+},{"_process":2,"dup":131}],217:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -25487,9 +26757,9 @@ function getClassName(propValue) {
 
 module.exports = ReactPropTypes;
 }).call(this,require('_process'))
-},{"./ReactElement":198,"./ReactPropTypeLocationNames":202,"./ReactPropTypesSecret":204,"./getIteratorFn":209,"_process":2,"fbjs/lib/emptyFunction":36,"fbjs/lib/warning":51}],204:[function(require,module,exports){
+},{"./ReactElement":212,"./ReactPropTypeLocationNames":216,"./ReactPropTypesSecret":218,"./getIteratorFn":223,"_process":2,"fbjs/lib/emptyFunction":36,"fbjs/lib/warning":51}],218:[function(require,module,exports){
 arguments[4][132][0].apply(exports,arguments)
-},{"dup":132}],205:[function(require,module,exports){
+},{"dup":132}],219:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -25531,9 +26801,9 @@ _assign(ReactPureComponent.prototype, ReactComponent.prototype);
 ReactPureComponent.prototype.isPureReactComponent = true;
 
 module.exports = ReactPureComponent;
-},{"./ReactComponent":194,"./ReactNoopUpdateQueue":201,"fbjs/lib/emptyObject":37,"object-assign":58}],206:[function(require,module,exports){
+},{"./ReactComponent":208,"./ReactNoopUpdateQueue":215,"fbjs/lib/emptyObject":37,"object-assign":58}],220:[function(require,module,exports){
 arguments[4][140][0].apply(exports,arguments)
-},{"dup":140}],207:[function(require,module,exports){
+},{"dup":140}],221:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -25561,7 +26831,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = canDefineProperty;
 }).call(this,require('_process'))
-},{"_process":2}],208:[function(require,module,exports){
+},{"_process":2}],222:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -25650,9 +26920,9 @@ function checkReactTypeSpec(typeSpecs, values, location, componentName, element,
 
 module.exports = checkReactTypeSpec;
 }).call(this,require('_process'))
-},{"./ReactComponentTreeHook":195,"./ReactPropTypeLocationNames":202,"./ReactPropTypesSecret":204,"./reactProdInvariant":211,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51}],209:[function(require,module,exports){
+},{"./ReactComponentTreeHook":209,"./ReactPropTypeLocationNames":216,"./ReactPropTypesSecret":218,"./reactProdInvariant":225,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51}],223:[function(require,module,exports){
 arguments[4][173][0].apply(exports,arguments)
-},{"dup":173}],210:[function(require,module,exports){
+},{"dup":173}],224:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -25692,9 +26962,9 @@ function onlyChild(children) {
 
 module.exports = onlyChild;
 }).call(this,require('_process'))
-},{"./ReactElement":198,"./reactProdInvariant":211,"_process":2,"fbjs/lib/invariant":44}],211:[function(require,module,exports){
+},{"./ReactElement":212,"./reactProdInvariant":225,"_process":2,"fbjs/lib/invariant":44}],225:[function(require,module,exports){
 arguments[4][182][0].apply(exports,arguments)
-},{"dup":182}],212:[function(require,module,exports){
+},{"dup":182}],226:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -25872,12 +27142,12 @@ function traverseAllChildren(children, callback, traverseContext) {
 
 module.exports = traverseAllChildren;
 }).call(this,require('_process'))
-},{"./KeyEscapeUtils":189,"./ReactCurrentOwner":196,"./ReactElementSymbol":199,"./getIteratorFn":209,"./reactProdInvariant":211,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51}],213:[function(require,module,exports){
+},{"./KeyEscapeUtils":203,"./ReactCurrentOwner":210,"./ReactElementSymbol":213,"./getIteratorFn":223,"./reactProdInvariant":225,"_process":2,"fbjs/lib/invariant":44,"fbjs/lib/warning":51}],227:[function(require,module,exports){
 'use strict';
 
 module.exports = require('./lib/React');
 
-},{"./lib/React":191}],214:[function(require,module,exports){
+},{"./lib/React":205}],228:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -25988,7 +27258,7 @@ exports.connect = lookup;
 exports.Manager = require('./manager');
 exports.Socket = require('./socket');
 
-},{"./manager":215,"./socket":217,"./url":218,"debug":220,"socket.io-parser":223}],215:[function(require,module,exports){
+},{"./manager":229,"./socket":231,"./url":232,"debug":234,"socket.io-parser":237}],229:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -26550,7 +27820,7 @@ Manager.prototype.onreconnect = function () {
   this.emitAll('reconnect', attempt);
 };
 
-},{"./on":216,"./socket":217,"backo2":8,"component-bind":11,"component-emitter":219,"debug":220,"engine.io-client":14,"indexof":54,"socket.io-parser":223}],216:[function(require,module,exports){
+},{"./on":230,"./socket":231,"backo2":8,"component-bind":11,"component-emitter":233,"debug":234,"engine.io-client":14,"indexof":54,"socket.io-parser":237}],230:[function(require,module,exports){
 
 /**
  * Module exports.
@@ -26576,7 +27846,7 @@ function on (obj, ev, fn) {
   };
 }
 
-},{}],217:[function(require,module,exports){
+},{}],231:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -26997,7 +28267,7 @@ Socket.prototype.compress = function (compress) {
   return this;
 };
 
-},{"./on":216,"component-bind":11,"component-emitter":219,"debug":220,"has-binary":52,"socket.io-parser":223,"to-array":228}],218:[function(require,module,exports){
+},{"./on":230,"component-bind":11,"component-emitter":233,"debug":234,"has-binary":52,"socket.io-parser":237,"to-array":242}],232:[function(require,module,exports){
 (function (global){
 
 /**
@@ -27076,13 +28346,13 @@ function url (uri, loc) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"debug":220,"parseuri":61}],219:[function(require,module,exports){
+},{"debug":234,"parseuri":61}],233:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"dup":24}],220:[function(require,module,exports){
+},{"dup":24}],234:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"./debug":221,"_process":2,"dup":25}],221:[function(require,module,exports){
+},{"./debug":235,"_process":2,"dup":25}],235:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"dup":26,"ms":57}],222:[function(require,module,exports){
+},{"dup":26,"ms":57}],236:[function(require,module,exports){
 (function (global){
 /*global Blob,File*/
 
@@ -27227,7 +28497,7 @@ exports.removeBlobs = function(data, callback) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./is-buffer":224,"isarray":55}],223:[function(require,module,exports){
+},{"./is-buffer":238,"isarray":55}],237:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -27633,7 +28903,7 @@ function error(data){
   };
 }
 
-},{"./binary":222,"./is-buffer":224,"component-emitter":12,"debug":225,"json3":56}],224:[function(require,module,exports){
+},{"./binary":236,"./is-buffer":238,"component-emitter":12,"debug":239,"json3":56}],238:[function(require,module,exports){
 (function (global){
 
 module.exports = isBuf;
@@ -27650,7 +28920,7 @@ function isBuf(obj) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],225:[function(require,module,exports){
+},{}],239:[function(require,module,exports){
 
 /**
  * This is the web browser implementation of `debug()`.
@@ -27820,7 +29090,7 @@ function localstorage(){
   } catch (e) {}
 }
 
-},{"./debug":226}],226:[function(require,module,exports){
+},{"./debug":240}],240:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -28019,7 +29289,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":227}],227:[function(require,module,exports){
+},{"ms":241}],241:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -28146,7 +29416,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],228:[function(require,module,exports){
+},{}],242:[function(require,module,exports){
 module.exports = toArray
 
 function toArray(list, index) {
@@ -28161,7 +29431,7 @@ function toArray(list, index) {
     return array
 }
 
-},{}],229:[function(require,module,exports){
+},{}],243:[function(require,module,exports){
 (function (global){
 /*! https://mths.be/wtf8 v1.0.0 by @mathias */
 ;(function(root) {
@@ -28399,7 +29669,7 @@ function toArray(list, index) {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],230:[function(require,module,exports){
+},{}],244:[function(require,module,exports){
 'use strict';
 
 var alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_'.split('')
