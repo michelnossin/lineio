@@ -3,6 +3,8 @@ import Line from './Line';
 import io from 'socket.io-client'
 import keydown from 'react-keydown';
 let socket = io(`http://localhost:3000`) //our server
+let user = "user_" + Math.random().toString(36).substring(7); //Lets give the user a name, todo: let the user make this up
+console.log("Client is using this name: " + user  );
 
 @keydown
 class LineIO extends React.Component {
@@ -10,9 +12,12 @@ class LineIO extends React.Component {
   constructor(props) {
     super(props);
 
+    var dict = {}
+    dict[user] = {x1:0,y1:0,x2:0,y2:0}
+
     this.state = {
         event_msg: {}, //message from server
-        event_pos: { userA : {x1:0,y1:0,x2:0,y2:0} , userB : {x1:0,y1:0,x2:0,y2:0}},  //All player positions
+        position: dict,
         key: 'n/a', //key pressed
         lines : []  //list of all non current lines
     };
@@ -25,12 +30,17 @@ class LineIO extends React.Component {
     //received connect from server
     socket.on('connect', function() {
       console.log("Client receives connect event"  );
+      //this.sendMessage({ type: "userHandshake", user: user }) //ask server to join game
+      socket.emit('clientmessage', { type: "userHandshake", user: user })
     })
 
     //receive event from server
     socket.on('serverevent', ev_msg => {
       if (ev_msg.type == 'servermessage') { this.receiveMessage(ev_msg.message)  }
-      if (ev_msg.type == 'positions') { this.receivePositions(ev_msg.players) }
+      if (ev_msg.type == 'positions') {
+        //console.log("event postion : " + JSON.stringify(ev_msg) );
+        this.receivePositions(ev_msg.players)
+       }
     })
   }
 
@@ -40,29 +50,32 @@ class LineIO extends React.Component {
     if ( event ) {
       this.setState( { key: event.which } );
       //Change direction after cursor press
-      if (event.which == 37) { this.sendMessage({type : "userCommand", user: "userA" , command :"L"}) }
-      if (event.which == 38) { this.sendMessage({type : "userCommand", user: "userA", command : "U"})  }
-      if (event.which == 39) { this.sendMessage({type : "userCommand", user: "userA", command : "R"})  }
-      if (event.which == 40) { this.sendMessage({type : "userCommand", user: "userA", command : "D"})  }
-      //if (event.which in [37,38,39,40] ) { this.addLine(this.state.event_pos) }  //save current line to history
-      this.addLine(this.state.event_pos)
+      if (event.which == 37) { this.sendMessage({type : "userCommand", user: user, command :"L"}) }
+      if (event.which == 38) { this.sendMessage({type : "userCommand", user: user, command : "U"})  }
+      if (event.which == 39) { this.sendMessage({type : "userCommand", user: user, command : "R"})  }
+      if (event.which == 40) { this.sendMessage({type : "userCommand", user: user, command : "D"})  }
+
+      this.addLine()
     }
   }
 
   //Add line to our history, triggered after keypress/change of direction of line
-  addLine(line) {
+  addLine() {
       // State change will cause component re-render
+      let saveLine = this.state.position[user]
+      console.log("saving line : " + JSON.stringify(saveLine) );
+      let newx = this.state.position[user].x2
+      let newy = this.state.position[user].y2
 
-      //Current endpoint will become new begin point
-      let newx = this.state.event_pos.userA.x2
-      let newy = this.state.event_pos.userA.y2
-      let userB = this.state.event_pos.userB
+      var newLine = {}
+      newLine[user] = {x1: newx, y1: newy, x2 : newx, y2 : newy}
 
       this.setState({
-        lines : this.state.lines.concat([{line: line}]),
-        event_pos: { userA : {x1: newx, y1: newy, x2 : newx, y2 : newy}, userB : userB }
-      })
+        lines: this.state.lines.concat(saveLine),
+        position: newLine
+      });
 
+      console.log("main lines after concat : " + JSON.stringify(this.state.lines) );
     }
 
   //Send event message to server, for example to let others know we change our line direction
@@ -78,21 +91,21 @@ class LineIO extends React.Component {
   //We receive position of all player lines each .. period
   receivePositions(positions) {
 
-    let w = window.innerWidth //Positions are based on a 1000x1000 blocks virtual field, translate to real window size
-    let h = window.innerHeight
-    let p1x1 = (w/1000) * positions.userA.x1
-    let p1y1 = (h/1000) * positions.userA.y1
-    let p1x2 = (w/1000) * positions.userA.x2
-    let p1y2 = (h/1000) * positions.userA.y2
-    //if (p1x2 < p1x1) { [p1x1, p1x2] = [p1x2, p1x1];}
+    //console.log("positions " + JSON.stringify(positions) );
+    //console.log("position user " + JSON.stringify(positions[user]) );
 
-    let p2x1 = (w/1000) * positions.userB.x1
-    let p2y1 = (h/1000) * positions.userB.y1
-    let p2x2 = (w/1000) * positions.userB.x2
-    let p2y2 = (h/1000) * positions.userB.y2
-    //if (p2x2 < p2x1) { [p2x1, p2x2] = [p2x2, p2x1];}
+    if (positions[user]) {
+      let w = window.innerWidth //Positions are based on a 1000x1000 blocks virtual field, translate to real window size
+      let h = window.innerHeight
+      let p1x1 = (w/1000) * positions[user].x1
+      let p1y1 = (h/1000) * positions[user].y1
+      let p1x2 = (w/1000) * positions[user].x2
+      let p1y2 = (h/1000) * positions[user].y2
 
-    this.setState( {event_pos: { userA : {x1:p1x1,y1:p1y1,x2:p1x2,y2:p1y2} , userB : {x1:p2x1,y1:p2y1,x2:p2x2,y2:p2y2}}})
+      var dt = {}
+      dt[user] = {x1:p1x1,y1:p1y1,x2:p1x2,y2:p1y2}
+      this.setState( { position: dt })
+    }
   }
 
   //Click on element handling, not used at this moment
@@ -102,22 +115,18 @@ class LineIO extends React.Component {
     this.sendMessage({ type : 'userMessage', message: 'This is an event from client to server after a click' } )
   }
 
-  //Render our game initially with 2 players each having 1 line
   render() {
     return (
       <div className="Lineio" >
       { this.state.lines.map((item,index) => (
         <Line
         key={index}
-        from={{x: item.line.userA.x1, y: item.line.userA.y1}}
-        to={{x: item.line.userA.x2, y: item.line.userA.y2}} style="5px solid orange"/>
+        from={{x: item.x1, y: item.y1}}
+        to={{x: item.x2, y: item.y2}} style="5px solid orange"/>
       )) }
       <Line
-      from={{x: this.state.event_pos.userA.x1, y: this.state.event_pos.userA.y1}}
-      to={{x: this.state.event_pos.userA.x2, y: this.state.event_pos.userA.y2}} style="5px solid orange"/>
-      <Line
-      from={{x: this.state.event_pos.userB.x1, y: this.state.event_pos.userB.y1}}
-      to={{x: this.state.event_pos.userB.x2, y: this.state.event_pos.userB.y2}} style="5px solid red"/>
+      from={{x: this.state.position[user].x1, y: this.state.position[user].y1}}
+      to={{x: this.state.position[user].x2, y: this.state.position[user].y2}} style="5px solid orange"/>
       <footer>{this.state.event_msg.message}</footer>
        </div>
     );
@@ -135,8 +144,31 @@ LineIO.defaultProps = {
 export default LineIO;
 
 
+//render() {
+//  return (
+//    <div className="Lineio" >
+//    { this.state.lines.map((item,index) => (
+//      <Line
+//      key={index}
+//      from={{x: item.line.userA.x1, y: item.line.userA.y1}}
+//      to={{x: item.line.userA.x2, y: item.line.userA.y2}} style="5px solid orange"/>
+//    )) }
+//    <Line
+//    from={{x: this.state.event_pos.userA.x1, y: this.state.event_pos.userA.y1}}
+//    to={{x: this.state.event_pos.userA.x2, y: this.state.event_pos.userA.y2}} style="5px solid orange"/>
+//    <footer>{this.state.event_msg.message}</footer>
+//     </div>
+//  );
+//}
+
+
+
 //Below just some temporary code we might be needed later. To remove sometime:
 //{this.state.lines.map((item,index) => (<h1 key={index}>{item.command}</h1> )) }
+
+//<Line
+//from={{x: this.state.event_pos.userB.x1, y: this.state.event_pos.userB.y1}}
+//to={{x: this.state.event_pos.userB.x2, y: this.state.event_pos.userB.y2}} style="5px solid red"/>
 
 //this.state.map((item) => (
 //                        <SampleComponent key={item.id} name={item.name}/>

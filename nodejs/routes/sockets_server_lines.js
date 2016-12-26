@@ -1,33 +1,25 @@
 var io = require('socket.io');
 var counter=0
+var players = {}
 
 exports.initialize = function(server) {
   io = io.listen(server);
 
-  userA = {name: "userA", direction: "R", x1: 100, y1 : 900, x2: 100, y2 : 900,speed : 1}
-  userB = {name: "userB", direction: "L", x1: 900, y1 : 100, x2: 900, y2 : 100,speed : 1}
-  players = {userA : userA, userB : userB}
-
   //Send positions each 1/10 th of a second
   setInterval(function(){
+    //console.log("players:" + JSON.stringify(players) );
     io.sockets.emit('serverevent', {type : "positions", players: players })
 
-    if (userA.direction == "R") {
-      userA.x2 = userA.x2 + 1
-    }
-    else if (userA.direction == "L") {
-      userA.x2 = userA.x2 - 1
-    }
-    else if (userA.direction == "U") {
-      userA.y2 = userA.y2 - 1
-    }
-    else if (userA.direction == "D") {
-      userA.y2 = userA.y2 + 1
-    }
+    //loop through players and calculate new positions
+    for (var player in players) {
+      //console.log("player: " + JSON.stringify(player) );
+      if (players[player].direction == "R") { players[player].x2 = players[player].x2 + players[player].speed }
+      else if (players[player].direction == "L") { players[player].x2 = players[player].x2 - players[player].speed }
+      else if (players[player].direction == "U") { players[player].y2 = players[player].y2 - players[player].speed }
+      else if (players[player].direction == "D") { players[player].y2 = players[player].y2 + players[player].speed }
+    };
 
-    userB.x2 = userB.x2 - 1
-
-    counter = counter + 1
+    counter = counter + 1 //used as timer
 
   }, 10);
 
@@ -44,13 +36,19 @@ exports.initialize = function(server) {
             socket.emit('serverevent', {type : "servermessage", message : "The server says hi back"})
             socket.broadcast.emit('serverevent', {type : "servermessage", message : "Someone says hi to all"})
           }
-          if(message.type == "userCommand"){
+          else if(message.type == "userCommand"){
             console.log("At time " + counter + " the user " + message.user + " gives command : " + message.command);
 
             //Switch direction of user
-            userA.direction = message.command
-            userA.x1 = userA.x2 //Lets make the starting from current position
-            userA.y1 = userA.y2
+            players[message.user].direction = message.command
+            players[message.user].x1 = players[message.user].x2
+            players[message.user].y1 = players[message.user].y2
+          }
+          else if(message.type == "userHandshake"){
+            console.log("At time " + counter + " the user " + message.user + " wants to play");
+            newplayer = { name: message.user, direction: "R", x1: 100, y1 : 900, x2: 100, y2 : 900,speed : 1}
+            console.log("adding user " + newplayer.name);
+            players[message.user] = newplayer
           }
         });
 
