@@ -30,7 +30,6 @@ class LineIO extends React.Component {
     //received connect from server
     socket.on('connect', function() {
       console.log("Client receives connect event"  );
-      //this.sendMessage({ type: "userHandshake", user: user }) //ask server to join game
       socket.emit('clientmessage', { type: "userHandshake", user: user })
     })
 
@@ -39,26 +38,19 @@ class LineIO extends React.Component {
       console.log("Client receives server event type " + ev_msg.type  );
       if (ev_msg.type == 'servermessage') { this.receiveMessage(ev_msg.message)  }
       else if (ev_msg.type == 'positions') {
-        //console.log("event postion : " + JSON.stringify(ev_msg) );
         this.receivePositions(ev_msg.players)
        }
       else if (ev_msg.type == 'serverHandshake') {
         var dict = {}
         dict[user] = ev_msg.user
-        //console.log("content serverhandshake: " + JSON.stringify(dict))
         this.setState( { position: dict })
       }
       else if (ev_msg.type == 'addline') {
-      //socket.broadcast.emit('serverevent', {type : "addline", line : players[player] })
           console.log("adding line " + JSON.stringify(ev_msg.line))
-          //this.setState({
-          //  lines: this.state.lines.concat(ev_msg.line)
-          //});
           this.addLine(ev_msg.user)
       }
     })
   }
-//socket.emit('serverevent', {type : "serverHandshake", user: newplayer})
 
   //keypress reveived to, eg , change the direction of our line
   componentWillReceiveProps( nextProps ) {
@@ -71,30 +63,15 @@ class LineIO extends React.Component {
       if (event.which == 39) { this.sendMessage({type : "userCommand", user: user, command : "R",line: this.state.position[user]})  }
       if (event.which == 40) { this.sendMessage({type : "userCommand", user: user, command : "D",line: this.state.position[user]})  }
 
-      //this.addLine()
     }
   }
 
   //Add line to our history, triggered after keypress/change of direction of line
   addLine(username) {
-      // State change will cause component re-render
       let saveLine = this.state.position[username]
-      //console.log("saving line : " + JSON.stringify(saveLine) );
-
-      //let newx = this.state.position[username].x2
-      //let newy = this.state.position[username].y2
-      //var newLine = saveLine
-      //newLine["x1"] = newx
-      //newLine["y1"] = newy
-      //newLine["x2"] = newx
-      //newLine["y2"] = newy
-
-
-      //newLine[username] = {x1: newx, y1: newy, x2 : newx, y2 : newy}
 
       this.setState({
-        lines: this.state.lines.concat(saveLine) //,
-        //position: newLine
+        lines: this.state.lines.concat(saveLine)
       });
 
       console.log("main lines after concat : " + JSON.stringify(this.state.lines) );
@@ -164,38 +141,8 @@ LineIO.defaultProps = {
 
 export default LineIO;
 
+//Some stuff to remove later, might come in handy:
 
-//render() {
-//  return (
-//    <div className="Lineio" >
-//    { this.state.lines.map((item,index) => (
-//      <Line
-//      key={index}
-//      from={{x: item.line.userA.x1, y: item.line.userA.y1}}
-//      to={{x: item.line.userA.x2, y: item.line.userA.y2}} style="5px solid orange"/>
-//    )) }
-//    <Line
-//    from={{x: this.state.event_pos.userA.x1, y: this.state.event_pos.userA.y1}}
-//    to={{x: this.state.event_pos.userA.x2, y: this.state.event_pos.userA.y2}} style="5px solid orange"/>
-//    <footer>{this.state.event_msg.message}</footer>
-//     </div>
-//  );
-//}
-
-
-
-//Below just some temporary code we might be needed later. To remove sometime:
-//{this.state.lines.map((item,index) => (<h1 key={index}>{item.command}</h1> )) }
-
-//<Line
-//from={{x: this.state.event_pos.userB.x1, y: this.state.event_pos.userB.y1}}
-//to={{x: this.state.event_pos.userB.x2, y: this.state.event_pos.userB.y2}} style="5px solid red"/>
-
-//this.state.map((item) => (
-//                        <SampleComponent key={item.id} name={item.name}/>
-//                    ))
-
-//This works, removing later
 //<div className="Lineio">
 //<a href="#" onClick={ (e) => this.handleClick(e) }>Click me</a>
 //<h1>Message: {this.state.event_msg.message} </h1>
