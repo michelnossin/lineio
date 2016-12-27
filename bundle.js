@@ -336,15 +336,15 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       lines: [] //list of all non current lines
     };
 
-    _this.sendMessage.bind(_this);
-    _this.receiveMessage.bind(_this);
-    _this.receivePositions.bind(_this);
-    _this.addLine.bind(_this);
+    _this.sendMessage = _this.sendMessage.bind(_this);
+    _this.receiveMessage = _this.receiveMessage.bind(_this);
+    _this.receivePositions = _this.receivePositions.bind(_this);
+    _this.addLine = _this.addLine.bind(_this);
+    _this.autoKeyPress = _this.autoKeyPress.bind(_this);
 
-    //received connect from server
+    //received connect from server, this will trigger a handshake from our client by saying our name
     socket.on('connect', function () {
       console.log("Client receives connect event");
-      //this.sendMessage({ type: "userHandshake", user: user }) //ask server to join game
       socket.emit('clientmessage', { type: "userHandshake", user: user });
     });
 
@@ -352,53 +352,81 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
     socket.on('serverevent', function (ev_msg) {
       console.log("Client receives server event type " + ev_msg.type);
       if (ev_msg.type == 'servermessage') {
+        //Some user send a text message.
         _this.receiveMessage(ev_msg.message);
-      } else if (ev_msg.type == 'positions') {
-        //console.log("event postion : " + JSON.stringify(ev_msg) );
-        _this.receivePositions(ev_msg.players);
-      } else if (ev_msg.type == 'serverHandshake') {
-        var dict = {};
-        dict[user] = ev_msg.user;
-        //console.log("content serverhandshake: " + JSON.stringify(dict))
-        _this.setState({ position: dict });
-      } else if (ev_msg.type == 'addline') {
-        //socket.broadcast.emit('serverevent', {type : "addline", line : players[player] })
-        console.log("adding line " + JSON.stringify(ev_msg.line));
-        //this.setState({
-        //  lines: this.state.lines.concat(ev_msg.line)
-        //});
-        _this.addLine(ev_msg.user);
       }
+      //each short period we will get all latest positions of all users
+      else if (ev_msg.type == 'positions') {
+          _this.receivePositions(ev_msg.players);
+        }
+        //Init client based on server properties as determined
+        else if (ev_msg.type == 'serverHandshake') {
+            var dict = {};
+            dict[user] = ev_msg.user;
+            _this.setState({ position: dict });
+          }
+          //If a user switched line by pressing a cursor key the line has to be added to the lines hstory array so these also will render
+          else if (ev_msg.type == 'addline') {
+              _this.addLine(ev_msg.user);
+            }
     });
     return _this;
   }
-  //socket.emit('serverevent', {type : "serverHandshake", user: newplayer})
 
-  //keypress reveived to, eg , change the direction of our line
+  //Generate random control command, handy for simulation of multipley players.
 
 
   _createClass(LineIO, [{
+    key: 'autoKeyPress',
+    value: function autoKeyPress() {
+      var w = window.innerWidth;
+      var h = window.innerHeight;
+
+      var textArray = ["D", "U", "R", "L"];
+      var randomNumber = Math.floor(Math.random() * textArray.length);
+      var keypress = textArray[randomNumber];
+      if (this.state.position[user].x2 < 10) {
+        keypress = "R";
+      } else if (this.state.position[user].y2 < 10) {
+        keypress = "D";
+      } else if (this.state.position[user].x2 > w) {
+        keypress = "L";
+      } else if (this.state.position[user].y2 > h) {
+        keypress = "U";
+      }
+      socket.emit('clientmessage', { type: "userCommand", user: user, command: keypress });
+    }
+
+    //client set timer, at this moment only used to simulate key events
+
+  }, {
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      this.timer = setInterval(this.autoKeyPress, 1000); //1 second random movement
+    }
+
+    //keypress reveived to, eg , change the direction of our line
+
+  }, {
     key: 'componentWillReceiveProps',
     value: function componentWillReceiveProps(nextProps) {
       var event = nextProps.keydown.event;
 
       if (event) {
         this.setState({ key: event.which });
-        //Change direction after cursor press
+        //Change direction after cursor press //, line: this.state.position[user]
         if (event.which == 37) {
-          this.sendMessage({ type: "userCommand", user: user, command: "L", line: this.state.position[user] });
+          this.sendMessage({ type: "userCommand", user: user, command: "L" });
         }
         if (event.which == 38) {
-          this.sendMessage({ type: "userCommand", user: user, command: "U", line: this.state.position[user] });
+          this.sendMessage({ type: "userCommand", user: user, command: "U" });
         }
         if (event.which == 39) {
-          this.sendMessage({ type: "userCommand", user: user, command: "R", line: this.state.position[user] });
+          this.sendMessage({ type: "userCommand", user: user, command: "R" });
         }
         if (event.which == 40) {
-          this.sendMessage({ type: "userCommand", user: user, command: "D", line: this.state.position[user] });
+          this.sendMessage({ type: "userCommand", user: user, command: "D" });
         }
-
-        //this.addLine()
       }
     }
 
@@ -407,27 +435,9 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
   }, {
     key: 'addLine',
     value: function addLine(username) {
-      // State change will cause component re-render
-      var saveLine = this.state.position[username];
-      //console.log("saving line : " + JSON.stringify(saveLine) );
-
-      //let newx = this.state.position[username].x2
-      //let newy = this.state.position[username].y2
-      //var newLine = saveLine
-      //newLine["x1"] = newx
-      //newLine["y1"] = newy
-      //newLine["x2"] = newx
-      //newLine["y2"] = newy
-
-
-      //newLine[username] = {x1: newx, y1: newy, x2 : newx, y2 : newy}
-
       this.setState({
-        lines: this.state.lines.concat(saveLine) //,
-        //position: newLine
+        lines: this.state.lines.concat(this.state.position[username])
       });
-
-      console.log("main lines after concat : " + JSON.stringify(this.state.lines));
     }
 
     //Send event message to server, for example to let others know we change our line direction
@@ -517,36 +527,8 @@ LineIO.defaultProps = {
 
 exports.default = LineIO;
 
-//render() {
-//  return (
-//    <div className="Lineio" >
-//    { this.state.lines.map((item,index) => (
-//      <Line
-//      key={index}
-//      from={{x: item.line.userA.x1, y: item.line.userA.y1}}
-//      to={{x: item.line.userA.x2, y: item.line.userA.y2}} style="5px solid orange"/>
-//    )) }
-//    <Line
-//    from={{x: this.state.event_pos.userA.x1, y: this.state.event_pos.userA.y1}}
-//    to={{x: this.state.event_pos.userA.x2, y: this.state.event_pos.userA.y2}} style="5px solid orange"/>
-//    <footer>{this.state.event_msg.message}</footer>
-//     </div>
-//  );
-//}
+//Some stuff to remove later, might come in handy:
 
-
-//Below just some temporary code we might be needed later. To remove sometime:
-//{this.state.lines.map((item,index) => (<h1 key={index}>{item.command}</h1> )) }
-
-//<Line
-//from={{x: this.state.event_pos.userB.x1, y: this.state.event_pos.userB.y1}}
-//to={{x: this.state.event_pos.userB.x2, y: this.state.event_pos.userB.y2}} style="5px solid red"/>
-
-//this.state.map((item) => (
-//                        <SampleComponent key={item.id} name={item.name}/>
-//                    ))
-
-//This works, removing later
 //<div className="Lineio">
 //<a href="#" onClick={ (e) => this.handleClick(e) }>Click me</a>
 //<h1>Message: {this.state.event_msg.message} </h1>

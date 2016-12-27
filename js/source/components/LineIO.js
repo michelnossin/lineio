@@ -22,12 +22,13 @@ class LineIO extends React.Component {
         lines : []  //list of all non current lines
     };
 
-    this.sendMessage.bind(this)
-    this.receiveMessage.bind(this)
-    this.receivePositions.bind(this)
-    this.addLine.bind(this)
+    this.sendMessage = this.sendMessage.bind(this)
+    this.receiveMessage = this.receiveMessage.bind(this)
+    this.receivePositions = this.receivePositions.bind(this)
+    this.addLine = this.addLine.bind(this)
+    this.autoKeyPress = this.autoKeyPress.bind(this)
 
-    //received connect from server
+    //received connect from server, this will trigger a handshake from our client by saying our name
     socket.on('connect', function() {
       console.log("Client receives connect event"  );
       socket.emit('clientmessage', { type: "userHandshake", user: user })
@@ -36,20 +37,53 @@ class LineIO extends React.Component {
     //receive event from server
     socket.on('serverevent', ev_msg => {
       console.log("Client receives server event type " + ev_msg.type  );
-      if (ev_msg.type == 'servermessage') { this.receiveMessage(ev_msg.message)  }
+      if (ev_msg.type == 'servermessage') {
+        //Some user send a text message.
+        this.receiveMessage(ev_msg.message)
+      }
+      //each short period we will get all latest positions of all users
       else if (ev_msg.type == 'positions') {
         this.receivePositions(ev_msg.players)
        }
+      //Init client based on server properties as determined
       else if (ev_msg.type == 'serverHandshake') {
         var dict = {}
         dict[user] = ev_msg.user
         this.setState( { position: dict })
       }
+      //If a user switched line by pressing a cursor key the line has to be added to the lines hstory array so these also will render
       else if (ev_msg.type == 'addline') {
-          console.log("adding line " + JSON.stringify(ev_msg.line))
           this.addLine(ev_msg.user)
       }
     })
+  }
+
+  //Generate random control command, handy for simulation of multipley players.
+  autoKeyPress() {
+    let w = window.innerWidth
+    let h = window.innerHeight
+
+    var textArray = ["D","U","R","L"];
+    var randomNumber = Math.floor(Math.random()*textArray.length);
+    var keypress = textArray[randomNumber]
+    if (this.state.position[user].x2 < 10) {
+      keypress = "R"
+    }
+    else if (this.state.position[user].y2 < 10) {
+      keypress = "D"
+    }
+    else if (this.state.position[user].x2 > w) {
+      keypress = "L"
+    }
+    else if (this.state.position[user].y2 > h) {
+      keypress = "U"
+    }
+    socket.emit('clientmessage', {type : "userCommand", user: user, command : keypress})
+  }
+
+  //client set timer, at this moment only used to simulate key events
+  componentDidMount()  {
+    this.timer = setInterval(this.autoKeyPress, 1000); //1 second random movement
   }
 
   //keypress reveived to, eg , change the direction of our line
@@ -57,24 +91,20 @@ class LineIO extends React.Component {
     const { keydown: { event } } = nextProps;
     if ( event ) {
       this.setState( { key: event.which } );
-      //Change direction after cursor press
-      if (event.which == 37) { this.sendMessage({type : "userCommand", user: user, command :"L", line: this.state.position[user]}) }
-      if (event.which == 38) { this.sendMessage({type : "userCommand", user: user, command : "U",line: this.state.position[user]})  }
-      if (event.which == 39) { this.sendMessage({type : "userCommand", user: user, command : "R",line: this.state.position[user]})  }
-      if (event.which == 40) { this.sendMessage({type : "userCommand", user: user, command : "D",line: this.state.position[user]})  }
+      //Change direction after cursor press //, line: this.state.position[user]
+      if (event.which == 37) { this.sendMessage({type : "userCommand", user: user, command :"L"}) }
+      if (event.which == 38) { this.sendMessage({type : "userCommand", user: user, command : "U"})  }
+      if (event.which == 39) { this.sendMessage({type : "userCommand", user: user, command : "R"})  }
+      if (event.which == 40) { this.sendMessage({type : "userCommand", user: user, command : "D"})  }
 
     }
   }
 
   //Add line to our history, triggered after keypress/change of direction of line
   addLine(username) {
-      let saveLine = this.state.position[username]
-
       this.setState({
-        lines: this.state.lines.concat(saveLine)
+        lines: this.state.lines.concat(this.state.position[username])
       });
-
-      console.log("main lines after concat : " + JSON.stringify(this.state.lines) );
     }
 
   //Send event message to server, for example to let others know we change our line direction
