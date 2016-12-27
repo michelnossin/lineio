@@ -68,16 +68,22 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
 
     //receive event from server
     socket.on('serverevent', function (ev_msg) {
+      console.log("Client receives server event type " + ev_msg.type);
       if (ev_msg.type == 'servermessage') {
         _this.receiveMessage(ev_msg.message);
-      }
-      if (ev_msg.type == 'positions') {
+      } else if (ev_msg.type == 'positions') {
         //console.log("event postion : " + JSON.stringify(ev_msg) );
         _this.receivePositions(ev_msg.players);
+      } else if (ev_msg.type == 'serverHandshake') {
+        var dict = {};
+        dict[user] = ev_msg.user;
+        //console.log("content serverhandshake: " + JSON.stringify(dict))
+        _this.setState({ position: dict });
       }
     });
     return _this;
   }
+  //socket.emit('serverevent', {type : "serverHandshake", user: newplayer})
 
   //keypress reveived to, eg , change the direction of our line
 
@@ -114,7 +120,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
     value: function addLine() {
       // State change will cause component re-render
       var saveLine = this.state.position[user];
-      console.log("saving line : " + JSON.stringify(saveLine));
+      //console.log("saving line : " + JSON.stringify(saveLine) );
       var newx = this.state.position[user].x2;
       var newy = this.state.position[user].y2;
 
@@ -161,10 +167,12 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         var p1y1 = h / 1000 * positions[user].y1;
         var p1x2 = w / 1000 * positions[user].x2;
         var p1y2 = h / 1000 * positions[user].y2;
+        positions[user]["x1"] = p1x1;
+        positions[user]["y1"] = p1y1;
+        positions[user]["x2"] = p1x2;
+        positions[user]["y2"] = p1y2;
 
-        var dt = {};
-        dt[user] = { x1: p1x1, y1: p1y1, x2: p1x2, y2: p1y2 };
-        this.setState({ position: dt });
+        this.setState({ position: positions });
       }
     }
 
@@ -180,6 +188,9 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
   }, {
     key: 'render',
     value: function render() {
+      var _this2 = this;
+
+      var username = "";
       return _react2.default.createElement(
         'div',
         { className: 'Lineio' },
@@ -187,11 +198,13 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
           return _react2.default.createElement(_Line2.default, {
             key: index,
             from: { x: item.x1, y: item.y1 },
-            to: { x: item.x2, y: item.y2 }, style: '5px solid orange' });
+            to: { x: item.x2, y: item.y2 }, style: item.styling });
         }),
-        _react2.default.createElement(_Line2.default, {
-          from: { x: this.state.position[user].x1, y: this.state.position[user].y1 },
-          to: { x: this.state.position[user].x2, y: this.state.position[user].y2 }, style: '5px solid orange' }),
+        Object.keys(this.state.position).map(function (username, index) {
+          return _react2.default.createElement(_Line2.default, {
+            from: { x: _this2.state.position[username].x1, y: _this2.state.position[username].y1 },
+            to: { x: _this2.state.position[username].x2, y: _this2.state.position[username].y2 }, style: _this2.state.position[username].styling });
+        }),
         _react2.default.createElement(
           'footer',
           null,

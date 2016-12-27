@@ -36,13 +36,21 @@ class LineIO extends React.Component {
 
     //receive event from server
     socket.on('serverevent', ev_msg => {
+      console.log("Client receives server event type " + ev_msg.type  );
       if (ev_msg.type == 'servermessage') { this.receiveMessage(ev_msg.message)  }
-      if (ev_msg.type == 'positions') {
+      else if (ev_msg.type == 'positions') {
         //console.log("event postion : " + JSON.stringify(ev_msg) );
         this.receivePositions(ev_msg.players)
        }
+      else if (ev_msg.type == 'serverHandshake') {
+        var dict = {}
+        dict[user] = ev_msg.user
+        //console.log("content serverhandshake: " + JSON.stringify(dict))
+        this.setState( { position: dict })
+      }
     })
   }
+//socket.emit('serverevent', {type : "serverHandshake", user: newplayer})
 
   //keypress reveived to, eg , change the direction of our line
   componentWillReceiveProps( nextProps ) {
@@ -63,7 +71,7 @@ class LineIO extends React.Component {
   addLine() {
       // State change will cause component re-render
       let saveLine = this.state.position[user]
-      console.log("saving line : " + JSON.stringify(saveLine) );
+      //console.log("saving line : " + JSON.stringify(saveLine) );
       let newx = this.state.position[user].x2
       let newy = this.state.position[user].y2
 
@@ -101,10 +109,12 @@ class LineIO extends React.Component {
       let p1y1 = (h/1000) * positions[user].y1
       let p1x2 = (w/1000) * positions[user].x2
       let p1y2 = (h/1000) * positions[user].y2
+      positions[user]["x1"] = p1x1
+      positions[user]["y1"] = p1y1
+      positions[user]["x2"] = p1x2
+      positions[user]["y2"] = p1y2
 
-      var dt = {}
-      dt[user] = {x1:p1x1,y1:p1y1,x2:p1x2,y2:p1y2}
-      this.setState( { position: dt })
+      this.setState( { position: positions })
     }
   }
 
@@ -116,18 +126,21 @@ class LineIO extends React.Component {
   }
 
   render() {
+    var username=""
     return (
       <div className="Lineio" >
       { this.state.lines.map((item,index) => (
         <Line
         key={index}
         from={{x: item.x1, y: item.y1}}
-        to={{x: item.x2, y: item.y2}} style="5px solid orange"/>
+        to={{x: item.x2, y: item.y2}} style={item.styling} />
       )) }
-      <Line
-      from={{x: this.state.position[user].x1, y: this.state.position[user].y1}}
-      to={{x: this.state.position[user].x2, y: this.state.position[user].y2}} style="5px solid orange"/>
-      <footer>{this.state.event_msg.message}</footer>
+      { Object.keys(this.state.position).map((username,index) => (
+        <Line
+        from={{x: this.state.position[username].x1, y: this.state.position[username].y1}}
+        to={{x: this.state.position[username].x2, y: this.state.position[username].y2}} style={this.state.position[username].styling}/>
+      ))}
+       <footer>{this.state.event_msg.message}</footer>
        </div>
     );
   }

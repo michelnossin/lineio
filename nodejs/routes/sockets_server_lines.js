@@ -1,6 +1,18 @@
 var io = require('socket.io');
-var counter=0
-var players = {}
+var counter=0 //for timing purpose
+var players = {}  //will contain current positions/speed/direction active players
+
+//lets init our slots. //our start positions will be 100 virtual pixels (x and y) seperated 16 players will fit in here.
+var slots = []
+let playfieldsize = 1000 //playfield is 1000x1000 (virtual)
+for (pos = 100; pos <= 400; pos = pos + 100) {
+    var cnt=0
+    slots.push({ slot: 0, direction: "D", styling: "5px solid orange", x1: pos, y1 : pos, x2: pos, y2 : pos,speed : 1})
+    slots.push({ slot: 1, direction: "U", styling: "5px solid yellow", x1: playfieldsize - pos, y1 : playfieldsize - pos, x2: playfieldsize - pos, y2 : playfieldsize - pos,speed : 1})
+    slots.push({ slot: 2, direction: "L", styling: "5px solid blue",x1: playfieldsize - pos, y1 : pos, x2: playfieldsize - pos, y2 : pos,speed : 1})
+    slots.push({ slot: 3, direction: "R", styling: "5px solid red",x1: pos, y1 : playfieldsize - pos, x2: pos, y2 : playfieldsize - pos,speed : 1})
+    cnt = cnt + 4
+}
 
 exports.initialize = function(server) {
   io = io.listen(server);
@@ -23,6 +35,29 @@ exports.initialize = function(server) {
 
   }, 10);
 
+  //This function will create a new user dictionary and determine properties like startposition, speed etc
+  function initNewPlayer(newUser) {
+
+    //Determine slot nr to use, and set the metadata for the slot as the user's properties
+    for (slot = 0; slot <= 15; slot++) {
+      var slotfound =0
+      for (var player in players) {
+        //console.log("player: " + JSON.stringify(player) );
+        if (players[player].slot == slot) { slotfound = 1}
+      }
+      if (slotfound == 0) {
+        console.log("slot nr " + slot + " is the lowest free slot, assigning to user " + newUser );
+        var newPlayer = slots[slot]
+        newPlayer["name"] = newUser
+        return newPlayer
+      }
+    }
+
+    //let newplayer  = { name: newUser, direction: "R", x1: 100, y1 : 900, x2: 100, y2 : 900,speed : 1}
+    console.log("All slots are taken allready, user cant play B:(" );
+    return {}
+  }
+
   //server receives connect event from client
   io.sockets.on("connection", function(socket){
     console.log("Client is connected to server" );
@@ -39,14 +74,17 @@ exports.initialize = function(server) {
           else if(message.type == "userCommand"){
             console.log("At time " + counter + " the user " + message.user + " gives command : " + message.command);
 
-            //Switch direction of user
+            //Switch direction of user, and start the new line at end location of previous line.
             players[message.user].direction = message.command
             players[message.user].x1 = players[message.user].x2
             players[message.user].y1 = players[message.user].y2
           }
           else if(message.type == "userHandshake"){
-            console.log("At time " + counter + " the user " + message.user + " wants to play");
-            newplayer = { name: message.user, direction: "R", x1: 100, y1 : 900, x2: 100, y2 : 900,speed : 1}
+            console.log("At time " + counter + " the user " + message.user + " wants to play. Adding to slot and reply with handshake");
+            newplayer = initNewPlayer(message.user)
+            socket.emit('serverevent', {type : "serverHandshake", user: newplayer})
+
+            //newplayer = { name: message.user, direction: "R", x1: 100, y1 : 900, x2: 100, y2 : 900,speed : 1}
             console.log("adding user " + newplayer.name);
             players[message.user] = newplayer
           }
