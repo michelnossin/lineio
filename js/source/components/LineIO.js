@@ -27,10 +27,12 @@ class LineIO extends React.Component {
     this.receivePositions = this.receivePositions.bind(this)
     this.addLine = this.addLine.bind(this)
     this.autoKeyPress = this.autoKeyPress.bind(this)
+    this.resetClient = this.resetClient.bind(this)
 
     //received connect from server, this will trigger a handshake from our client by saying our name
     socket.on('connect', function() {
       console.log("Client receives connect event"  );
+      console.log("Client sends handshake to server with username " + user  );
       socket.emit('clientmessage', { type: "userHandshake", user: user })
     })
 
@@ -47,6 +49,7 @@ class LineIO extends React.Component {
        }
       //Init client based on server properties as determined
       else if (ev_msg.type == 'serverHandshake') {
+        this.resetClient()
         var dict = {}
         dict[user] = ev_msg.user
         this.setState( { position: dict })
@@ -55,7 +58,25 @@ class LineIO extends React.Component {
       else if (ev_msg.type == 'addline') {
           this.addLine(ev_msg.user)
       }
+      //else if (ev_msg.type == 'resetGame') {
+      //    console.log("Client received reset game request from server, resetting client side"  );
+      //    this.resetClient()
+      //}
     })
+  }
+
+  //reset client after connect
+  resetClient() {
+    //Clear everything after server restart
+    var dict = {}
+    dict[user] = {x1:0,y1:0,x2:0,y2:0}
+    this.setState({
+      event_msg: {}, //message from server
+      position: dict,
+      key: 'n/a', //key pressed
+      lines : []  //list of all non current lines
+    });
+
   }
 
   //Generate random control command, handy for simulation of multipley players.

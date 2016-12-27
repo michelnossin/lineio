@@ -341,10 +341,12 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
     _this.receivePositions = _this.receivePositions.bind(_this);
     _this.addLine = _this.addLine.bind(_this);
     _this.autoKeyPress = _this.autoKeyPress.bind(_this);
+    _this.resetClient = _this.resetClient.bind(_this);
 
     //received connect from server, this will trigger a handshake from our client by saying our name
     socket.on('connect', function () {
       console.log("Client receives connect event");
+      console.log("Client sends handshake to server with username " + user);
       socket.emit('clientmessage', { type: "userHandshake", user: user });
     });
 
@@ -361,6 +363,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         }
         //Init client based on server properties as determined
         else if (ev_msg.type == 'serverHandshake') {
+            _this.resetClient();
             var dict = {};
             dict[user] = ev_msg.user;
             _this.setState({ position: dict });
@@ -369,14 +372,34 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
           else if (ev_msg.type == 'addline') {
               _this.addLine(ev_msg.user);
             }
+      //else if (ev_msg.type == 'resetGame') {
+      //    console.log("Client received reset game request from server, resetting client side"  );
+      //    this.resetClient()
+      //}
     });
     return _this;
   }
 
-  //Generate random control command, handy for simulation of multipley players.
+  //reset client after connect
 
 
   _createClass(LineIO, [{
+    key: 'resetClient',
+    value: function resetClient() {
+      //Clear everything after server restart
+      var dict = {};
+      dict[user] = { x1: 0, y1: 0, x2: 0, y2: 0 };
+      this.setState({
+        event_msg: {}, //message from server
+        position: dict,
+        key: 'n/a', //key pressed
+        lines: [] //list of all non current lines
+      });
+    }
+
+    //Generate random control command, handy for simulation of multipley players.
+
+  }, {
     key: 'autoKeyPress',
     value: function autoKeyPress() {
       var w = window.innerWidth;
