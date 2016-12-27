@@ -361,6 +361,13 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         dict[user] = ev_msg.user;
         //console.log("content serverhandshake: " + JSON.stringify(dict))
         _this.setState({ position: dict });
+      } else if (ev_msg.type == 'addline') {
+        //socket.broadcast.emit('serverevent', {type : "addline", line : players[player] })
+        console.log("adding line " + JSON.stringify(ev_msg.line));
+        //this.setState({
+        //  lines: this.state.lines.concat(ev_msg.line)
+        //});
+        _this.addLine(ev_msg.user);
       }
     });
     return _this;
@@ -379,19 +386,19 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         this.setState({ key: event.which });
         //Change direction after cursor press
         if (event.which == 37) {
-          this.sendMessage({ type: "userCommand", user: user, command: "L" });
+          this.sendMessage({ type: "userCommand", user: user, command: "L", line: this.state.position[user] });
         }
         if (event.which == 38) {
-          this.sendMessage({ type: "userCommand", user: user, command: "U" });
+          this.sendMessage({ type: "userCommand", user: user, command: "U", line: this.state.position[user] });
         }
         if (event.which == 39) {
-          this.sendMessage({ type: "userCommand", user: user, command: "R" });
+          this.sendMessage({ type: "userCommand", user: user, command: "R", line: this.state.position[user] });
         }
         if (event.which == 40) {
-          this.sendMessage({ type: "userCommand", user: user, command: "D" });
+          this.sendMessage({ type: "userCommand", user: user, command: "D", line: this.state.position[user] });
         }
 
-        this.addLine();
+        //this.addLine()
       }
     }
 
@@ -399,19 +406,25 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
 
   }, {
     key: 'addLine',
-    value: function addLine() {
+    value: function addLine(username) {
       // State change will cause component re-render
-      var saveLine = this.state.position[user];
+      var saveLine = this.state.position[username];
       //console.log("saving line : " + JSON.stringify(saveLine) );
-      var newx = this.state.position[user].x2;
-      var newy = this.state.position[user].y2;
 
-      var newLine = {};
-      newLine[user] = { x1: newx, y1: newy, x2: newx, y2: newy };
+      //let newx = this.state.position[username].x2
+      //let newy = this.state.position[username].y2
+      //var newLine = saveLine
+      //newLine["x1"] = newx
+      //newLine["y1"] = newy
+      //newLine["x2"] = newx
+      //newLine["y2"] = newy
+
+
+      //newLine[username] = {x1: newx, y1: newy, x2 : newx, y2 : newy}
 
       this.setState({
-        lines: this.state.lines.concat(saveLine),
-        position: newLine
+        lines: this.state.lines.concat(saveLine) //,
+        //position: newLine
       });
 
       console.log("main lines after concat : " + JSON.stringify(this.state.lines));
@@ -438,24 +451,20 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
   }, {
     key: 'receivePositions',
     value: function receivePositions(positions) {
+      var _this2 = this;
 
-      //console.log("positions " + JSON.stringify(positions) );
-      //console.log("position user " + JSON.stringify(positions[user]) );
+      var w = window.innerWidth;
+      var h = window.innerHeight;
 
-      if (positions[user]) {
-        var w = window.innerWidth; //Positions are based on a 1000x1000 blocks virtual field, translate to real window size
-        var h = window.innerHeight;
-        var p1x1 = w / 1000 * positions[user].x1;
-        var p1y1 = h / 1000 * positions[user].y1;
-        var p1x2 = w / 1000 * positions[user].x2;
-        var p1y2 = h / 1000 * positions[user].y2;
-        positions[user]["x1"] = p1x1;
-        positions[user]["y1"] = p1y1;
-        positions[user]["x2"] = p1x2;
-        positions[user]["y2"] = p1y2;
+      Object.keys(positions).map(function (username, index) {
+        //Positions are based on a 1000x1000 blocks virtual field, translate to real window size
+        positions[username]["x1"] = w / 1000 * positions[username].x1;
+        positions[username]["y1"] = h / 1000 * positions[username].y1;
+        positions[username]["x2"] = w / 1000 * positions[username].x2;
+        positions[username]["y2"] = h / 1000 * positions[username].y2;
 
-        this.setState({ position: positions });
-      }
+        _this2.setState({ position: positions });
+      });
     }
 
     //Click on element handling, not used at this moment
@@ -470,7 +479,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
   }, {
     key: 'render',
     value: function render() {
-      var _this2 = this;
+      var _this3 = this;
 
       var username = "";
       return _react2.default.createElement(
@@ -484,8 +493,8 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         }),
         Object.keys(this.state.position).map(function (username, index) {
           return _react2.default.createElement(_Line2.default, {
-            from: { x: _this2.state.position[username].x1, y: _this2.state.position[username].y1 },
-            to: { x: _this2.state.position[username].x2, y: _this2.state.position[username].y2 }, style: _this2.state.position[username].styling });
+            from: { x: _this3.state.position[username].x1, y: _this3.state.position[username].y1 },
+            to: { x: _this3.state.position[username].x2, y: _this3.state.position[username].y2 }, style: _this3.state.position[username].styling });
         }),
         _react2.default.createElement(
           'footer',

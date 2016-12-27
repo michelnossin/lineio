@@ -48,6 +48,14 @@ class LineIO extends React.Component {
         //console.log("content serverhandshake: " + JSON.stringify(dict))
         this.setState( { position: dict })
       }
+      else if (ev_msg.type == 'addline') {
+      //socket.broadcast.emit('serverevent', {type : "addline", line : players[player] })
+          console.log("adding line " + JSON.stringify(ev_msg.line))
+          //this.setState({
+          //  lines: this.state.lines.concat(ev_msg.line)
+          //});
+          this.addLine(ev_msg.user)
+      }
     })
   }
 //socket.emit('serverevent', {type : "serverHandshake", user: newplayer})
@@ -58,29 +66,35 @@ class LineIO extends React.Component {
     if ( event ) {
       this.setState( { key: event.which } );
       //Change direction after cursor press
-      if (event.which == 37) { this.sendMessage({type : "userCommand", user: user, command :"L"}) }
-      if (event.which == 38) { this.sendMessage({type : "userCommand", user: user, command : "U"})  }
-      if (event.which == 39) { this.sendMessage({type : "userCommand", user: user, command : "R"})  }
-      if (event.which == 40) { this.sendMessage({type : "userCommand", user: user, command : "D"})  }
+      if (event.which == 37) { this.sendMessage({type : "userCommand", user: user, command :"L", line: this.state.position[user]}) }
+      if (event.which == 38) { this.sendMessage({type : "userCommand", user: user, command : "U",line: this.state.position[user]})  }
+      if (event.which == 39) { this.sendMessage({type : "userCommand", user: user, command : "R",line: this.state.position[user]})  }
+      if (event.which == 40) { this.sendMessage({type : "userCommand", user: user, command : "D",line: this.state.position[user]})  }
 
-      this.addLine()
+      //this.addLine()
     }
   }
 
   //Add line to our history, triggered after keypress/change of direction of line
-  addLine() {
+  addLine(username) {
       // State change will cause component re-render
-      let saveLine = this.state.position[user]
+      let saveLine = this.state.position[username]
       //console.log("saving line : " + JSON.stringify(saveLine) );
-      let newx = this.state.position[user].x2
-      let newy = this.state.position[user].y2
 
-      var newLine = {}
-      newLine[user] = {x1: newx, y1: newy, x2 : newx, y2 : newy}
+      //let newx = this.state.position[username].x2
+      //let newy = this.state.position[username].y2
+      //var newLine = saveLine
+      //newLine["x1"] = newx
+      //newLine["y1"] = newy
+      //newLine["x2"] = newx
+      //newLine["y2"] = newy
+
+
+      //newLine[username] = {x1: newx, y1: newy, x2 : newx, y2 : newy}
 
       this.setState({
-        lines: this.state.lines.concat(saveLine),
-        position: newLine
+        lines: this.state.lines.concat(saveLine) //,
+        //position: newLine
       });
 
       console.log("main lines after concat : " + JSON.stringify(this.state.lines) );
@@ -98,24 +112,18 @@ class LineIO extends React.Component {
 
   //We receive position of all player lines each .. period
   receivePositions(positions) {
+    let w = window.innerWidth
+    let h = window.innerHeight
 
-    //console.log("positions " + JSON.stringify(positions) );
-    //console.log("position user " + JSON.stringify(positions[user]) );
-
-    if (positions[user]) {
-      let w = window.innerWidth //Positions are based on a 1000x1000 blocks virtual field, translate to real window size
-      let h = window.innerHeight
-      let p1x1 = (w/1000) * positions[user].x1
-      let p1y1 = (h/1000) * positions[user].y1
-      let p1x2 = (w/1000) * positions[user].x2
-      let p1y2 = (h/1000) * positions[user].y2
-      positions[user]["x1"] = p1x1
-      positions[user]["y1"] = p1y1
-      positions[user]["x2"] = p1x2
-      positions[user]["y2"] = p1y2
+    Object.keys(positions).map((username,index) => {
+      //Positions are based on a 1000x1000 blocks virtual field, translate to real window size
+      positions[username]["x1"] = (w/1000) * positions[username].x1
+      positions[username]["y1"] = (h/1000) * positions[username].y1
+      positions[username]["x2"] = (w/1000) * positions[username].x2
+      positions[username]["y2"] = (h/1000) * positions[username].y2
 
       this.setState( { position: positions })
-    }
+    })
   }
 
   //Click on element handling, not used at this moment

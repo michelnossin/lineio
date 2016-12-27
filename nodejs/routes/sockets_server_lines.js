@@ -74,10 +74,17 @@ exports.initialize = function(server) {
           else if(message.type == "userCommand"){
             console.log("At time " + counter + " the user " + message.user + " gives command : " + message.command);
 
+            //First let everybody know, also the sender, all players need to add the line in the lines history array before we change its properties
+            socket.broadcast.emit('serverevent', {type : "addline", user: message.user, line : players[message.user] })
+            socket.emit('serverevent', {type : "addline", user: message.user,line : players[message.user] })
+
             //Switch direction of user, and start the new line at end location of previous line.
             players[message.user].direction = message.command
             players[message.user].x1 = players[message.user].x2
             players[message.user].y1 = players[message.user].y2
+            //players[message.user].x1 = message.line.x2
+            //players[message.user].y1 = message.line.y2
+
           }
           else if(message.type == "userHandshake"){
             console.log("At time " + counter + " the user " + message.user + " wants to play. Adding to slot and reply with handshake");
