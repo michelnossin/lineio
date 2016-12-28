@@ -70,7 +70,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
 
     //receive event from server
     socket.on('serverevent', function (ev_msg) {
-      console.log("Client receives server event type " + ev_msg.type);
+      //console.log("Client receives server event type " + ev_msg.type  );
       if (ev_msg.type == 'servermessage') {
         //Some user send a text message.
         _this.receiveMessage(ev_msg.message);
@@ -86,13 +86,9 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
             dict[user] = ev_msg.user;
             _this.setState({ position: dict });
           }
-          //If a user switched line by pressing a cursor key the line has to be added to the lines hstory array so these also will render
-          else if (ev_msg.type == 'addline') {
-              _this.addLine(ev_msg.user);
-            }
-      //else if (ev_msg.type == 'resetGame') {
-      //    console.log("Client received reset game request from server, resetting client side"  );
-      //    this.resetClient()
+      //If a user switched line by pressing a cursor key the line has to be added to the lines hstory array so these also will render
+      //else if (ev_msg.type == 'addline') {
+      //    this.addLine(ev_msg.user)
       //}
     });
     return _this;
@@ -132,10 +128,12 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         keypress = "D";
       } else if (this.state.position[user].x2 > w) {
         keypress = "L";
+        console.log("sending left cmd to correct width " + this.state.position[user].x2);
       } else if (this.state.position[user].y2 > h) {
         keypress = "U";
+        console.log("sending UP cmd to correct height " + this.state.position[user].y2);
       }
-      socket.emit('clientmessage', { type: "userCommand", user: user, command: keypress });
+      socket.emit('clientmessage', { type: "userCommand", user: user, command: keypress, line: this.state.position[user] });
     }
 
     //client set timer, at this moment only used to simulate key events
@@ -157,16 +155,16 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         this.setState({ key: event.which });
         //Change direction after cursor press //, line: this.state.position[user]
         if (event.which == 37) {
-          this.sendMessage({ type: "userCommand", user: user, command: "L" });
+          this.sendMessage({ type: "userCommand", user: user, command: "L", line: this.state.position[user] });
         }
         if (event.which == 38) {
-          this.sendMessage({ type: "userCommand", user: user, command: "U" });
+          this.sendMessage({ type: "userCommand", user: user, command: "U", line: this.state.position[user] });
         }
         if (event.which == 39) {
-          this.sendMessage({ type: "userCommand", user: user, command: "R" });
+          this.sendMessage({ type: "userCommand", user: user, command: "R", line: this.state.position[user] });
         }
         if (event.which == 40) {
-          this.sendMessage({ type: "userCommand", user: user, command: "D" });
+          this.sendMessage({ type: "userCommand", user: user, command: "D", line: this.state.position[user] });
         }
       }
     }
@@ -215,6 +213,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         positions[username]["y2"] = h / 1000 * positions[username].y2;
 
         _this2.setState({ position: positions });
+        //this.forceUpdate()
       });
     }
 
@@ -233,17 +232,12 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       var _this3 = this;
 
       var username = "";
+
       return _react2.default.createElement(
         'div',
         { className: 'Lineio' },
-        this.state.lines.map(function (item, index) {
-          return _react2.default.createElement(_Line2.default, {
-            key: index,
-            from: { x: item.x1, y: item.y1 },
-            to: { x: item.x2, y: item.y2 }, style: item.styling });
-        }),
         Object.keys(this.state.position).map(function (username, index) {
-          return _react2.default.createElement(_Line2.default, {
+          return _react2.default.createElement(_Line2.default, { key: index,
             from: { x: _this3.state.position[username].x1, y: _this3.state.position[username].y1 },
             to: { x: _this3.state.position[username].x2, y: _this3.state.position[username].y2 }, style: _this3.state.position[username].styling });
         }),

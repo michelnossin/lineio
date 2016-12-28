@@ -8,13 +8,25 @@ import React from 'react';
 
 class Line extends React.Component {
 
+  constructor(props) {
+    super(props);
+  
+    this.state = {
+        from: this.props.from,
+        to: this.props.to ,
+        style: this.props.style
+    };
+  }
+
   render() {
+
     let from = this.props.from;
     let to = this.props.to;
     if (to.x < from.x) {
       from = this.props.to;
       to = this.props.from;
     }
+    //console.log("rendering with state is:  " + JSON.stringify(this.state))
 
     const len = Math.sqrt(Math.pow(from.x - to.x, 2) + Math.pow(from.y - to.y, 2));
     const angle = Math.atan((to.y - from.y) / (to.x - from.x));

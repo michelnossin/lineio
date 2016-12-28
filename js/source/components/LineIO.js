@@ -38,7 +38,7 @@ class LineIO extends React.Component {
 
     //receive event from server
     socket.on('serverevent', ev_msg => {
-      console.log("Client receives server event type " + ev_msg.type  );
+      //console.log("Client receives server event type " + ev_msg.type  );
       if (ev_msg.type == 'servermessage') {
         //Some user send a text message.
         this.receiveMessage(ev_msg.message)
@@ -55,12 +55,8 @@ class LineIO extends React.Component {
         this.setState( { position: dict })
       }
       //If a user switched line by pressing a cursor key the line has to be added to the lines hstory array so these also will render
-      else if (ev_msg.type == 'addline') {
-          this.addLine(ev_msg.user)
-      }
-      //else if (ev_msg.type == 'resetGame') {
-      //    console.log("Client received reset game request from server, resetting client side"  );
-      //    this.resetClient()
+      //else if (ev_msg.type == 'addline') {
+      //    this.addLine(ev_msg.user)
       //}
     })
   }
@@ -95,11 +91,13 @@ class LineIO extends React.Component {
     }
     else if (this.state.position[user].x2 > w) {
       keypress = "L"
+      console.log("sending left cmd to correct width " + this.state.position[user].x2 );
     }
     else if (this.state.position[user].y2 > h) {
       keypress = "U"
+      console.log("sending UP cmd to correct height " + this.state.position[user].y2 );
     }
-    socket.emit('clientmessage', {type : "userCommand", user: user, command : keypress})
+    socket.emit('clientmessage', {type : "userCommand", user: user, command : keypress, line: this.state.position[user] })
   }
 
   //client set timer, at this moment only used to simulate key events
@@ -113,10 +111,10 @@ class LineIO extends React.Component {
     if ( event ) {
       this.setState( { key: event.which } );
       //Change direction after cursor press //, line: this.state.position[user]
-      if (event.which == 37) { this.sendMessage({type : "userCommand", user: user, command :"L"}) }
-      if (event.which == 38) { this.sendMessage({type : "userCommand", user: user, command : "U"})  }
-      if (event.which == 39) { this.sendMessage({type : "userCommand", user: user, command : "R"})  }
-      if (event.which == 40) { this.sendMessage({type : "userCommand", user: user, command : "D"})  }
+      if (event.which == 37) { this.sendMessage({type : "userCommand", user: user, command :"L", line: this.state.position[user] }) }
+      if (event.which == 38) { this.sendMessage({type : "userCommand", user: user, command : "U",line: this.state.position[user] }) }
+      if (event.which == 39) { this.sendMessage({type : "userCommand", user: user, command : "R",line: this.state.position[user] }) }
+      if (event.which == 40) { this.sendMessage({type : "userCommand", user: user, command : "D",line: this.state.position[user] }) }
 
     }
   }
@@ -151,6 +149,7 @@ class LineIO extends React.Component {
       positions[username]["y2"] = (h/1000) * positions[username].y2
 
       this.setState( { position: positions })
+      //this.forceUpdate()
     })
   }
 
@@ -163,19 +162,14 @@ class LineIO extends React.Component {
 
   render() {
     var username=""
+
     return (
       <div className="Lineio" >
-      { this.state.lines.map((item,index) => (
-        <Line
-        key={index}
-        from={{x: item.x1, y: item.y1}}
-        to={{x: item.x2, y: item.y2}} style={item.styling} />
-      )) }
       { Object.keys(this.state.position).map((username,index) => (
-        <Line
-        from={{x: this.state.position[username].x1, y: this.state.position[username].y1}}
-        to={{x: this.state.position[username].x2, y: this.state.position[username].y2}} style={this.state.position[username].styling}/>
-      ))}
+      <Line key={index}
+      from={{x: this.state.position[username].x1, y: this.state.position[username].y1}}
+      to={{x: this.state.position[username].x2, y: this.state.position[username].y2}} style={this.state.position[username].styling}/>
+    ))}
        <footer>{this.state.event_msg.message}</footer>
        </div>
     );

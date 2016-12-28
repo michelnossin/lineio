@@ -25,21 +25,30 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var Line = function (_React$Component) {
   _inherits(Line, _React$Component);
 
-  function Line() {
+  function Line(props) {
     _classCallCheck(this, Line);
 
-    return _possibleConstructorReturn(this, (Line.__proto__ || Object.getPrototypeOf(Line)).apply(this, arguments));
+    var _this = _possibleConstructorReturn(this, (Line.__proto__ || Object.getPrototypeOf(Line)).call(this, props));
+
+    _this.state = {
+      from: _this.props.from,
+      to: _this.props.to,
+      style: _this.props.style
+    };
+    return _this;
   }
 
   _createClass(Line, [{
     key: 'render',
     value: function render() {
+
       var from = this.props.from;
       var to = this.props.to;
       if (to.x < from.x) {
         from = this.props.to;
         to = this.props.from;
       }
+      //console.log("rendering with state is:  " + JSON.stringify(this.state))
 
       var len = Math.sqrt(Math.pow(from.x - to.x, 2) + Math.pow(from.y - to.y, 2));
       var angle = Math.atan((to.y - from.y) / (to.x - from.x));
