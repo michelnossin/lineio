@@ -86,10 +86,10 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
             dict[user] = ev_msg.user;
             _this.setState({ position: dict });
           }
-      //If a user switched line by pressing a cursor key the line has to be added to the lines hstory array so these also will render
-      //else if (ev_msg.type == 'addline') {
-      //    this.addLine(ev_msg.user)
-      //}
+          //If a user switched line by pressing a cursor key the line has to be added to the lines hstory array so these also will render
+          else if (ev_msg.type == 'addline') {
+              _this.addLine(ev_msg.line);
+            }
     });
     return _this;
   }
@@ -133,7 +133,15 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         keypress = "U";
         console.log("sending UP cmd to correct height " + this.state.position[user].y2);
       }
-      socket.emit('clientmessage', { type: "userCommand", user: user, command: keypress, line: this.state.position[user] });
+
+      //normalise position on our virtual 1000x1000 grid
+      var tempy = this.state.position[user];
+      tempy["x1"] = tempy["x1"] / w * 1000;
+      tempy["y1"] = tempy["y1"] / h * 1000;
+      tempy["x2"] = tempy["x2"] / w * 1000;
+      tempy["y2"] = tempy["y2"] / h * 1000;
+
+      socket.emit('clientmessage', { type: "userCommand", user: user, command: keypress, line: tempy });
     }
 
     //client set timer, at this moment only used to simulate key events
@@ -153,18 +161,26 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
 
       if (event) {
         this.setState({ key: event.which });
+
+        //normalise position on our virtual 1000x1000 grid
+        var tempy = this.state.position[user];
+        tempy["x1"] = tempy["x1"] / w * 1000;
+        tempy["y1"] = tempy["y1"] / h * 1000;
+        tempy["x2"] = tempy["x2"] / w * 1000;
+        tempy["y2"] = tempy["y2"] / h * 1000;
+
         //Change direction after cursor press //, line: this.state.position[user]
         if (event.which == 37) {
-          this.sendMessage({ type: "userCommand", user: user, command: "L", line: this.state.position[user] });
+          this.sendMessage({ type: "userCommand", user: user, command: "L", line: tempy });
         }
         if (event.which == 38) {
-          this.sendMessage({ type: "userCommand", user: user, command: "U", line: this.state.position[user] });
+          this.sendMessage({ type: "userCommand", user: user, command: "U", line: tempy });
         }
         if (event.which == 39) {
-          this.sendMessage({ type: "userCommand", user: user, command: "R", line: this.state.position[user] });
+          this.sendMessage({ type: "userCommand", user: user, command: "R", line: tempy });
         }
         if (event.which == 40) {
-          this.sendMessage({ type: "userCommand", user: user, command: "D", line: this.state.position[user] });
+          this.sendMessage({ type: "userCommand", user: user, command: "D", line: tempy });
         }
       }
     }
@@ -173,11 +189,12 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
 
   }, {
     key: 'addLine',
-    value: function addLine(username) {
-      this.setState({
-        lines: this.state.lines.concat(this.state.position[username])
-      });
-    }
+    value: function addLine(username) {}
+    //this.setState({
+    //lines: this.state.lines.concat(this.state.position[username])
+
+    //});
+
 
     //Send event message to server, for example to let others know we change our line direction
 
@@ -212,6 +229,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         positions[username]["x2"] = w / 1000 * positions[username].x2;
         positions[username]["y2"] = h / 1000 * positions[username].y2;
 
+        //console.log("active line at pos" + JSON.stringify(positions ));
         _this2.setState({ position: positions });
         //this.forceUpdate()
       });
@@ -223,7 +241,6 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
     key: 'handleClick',
     value: function handleClick(e) {
       e.preventDefault();
-      //console.log("Client is sending message after click");
       this.sendMessage({ type: 'userMessage', message: 'This is an event from client to server after a click' });
     }
   }, {

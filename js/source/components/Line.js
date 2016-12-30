@@ -10,33 +10,25 @@ class Line extends React.Component {
 
   constructor(props) {
     super(props);
-  
-    this.state = {
-        from: this.props.from,
-        to: this.props.to ,
-        style: this.props.style
-    };
   }
 
   render() {
 
     let from = this.props.from;
     let to = this.props.to;
-    if (to.x < from.x) {
+    if ((to.x < from.x) || (to.y < from.y)) {
       from = this.props.to;
       to = this.props.from;
     }
-    //console.log("rendering with state is:  " + JSON.stringify(this.state))
-
-    const len = Math.sqrt(Math.pow(from.x - to.x, 2) + Math.pow(from.y - to.y, 2));
-    const angle = Math.atan((to.y - from.y) / (to.x - from.x));
 
     const style = {
       position: 'absolute',
-      transform: `translate(${from.x - .5 * len * (1 - Math.cos(angle))}px, ${from.y + .5 * len * Math.sin(angle)}px) rotate(${angle}rad)`,
-      width: `${len}px`,
-      height: `${0}px`,
-      borderBottom: this.props.style || '1px solid black'
+      left:`${from.x}`,
+      top: `${from.y}`,
+      width: `${to.x - from.x }px`,
+      height: `${to.y - from.y}px`,
+      borderBottom: this.props.style || '1px solid black',
+      borderLeft: this.props.style || '1px solid black'
     };
 
     return <div style={style}></div>;

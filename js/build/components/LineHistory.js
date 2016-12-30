@@ -70,14 +70,12 @@ var LineHistory = function (_React$Component) {
       var h = window.innerHeight;
 
       //Positions are based on a 1000x1000 blocks virtual field, translate to real window size
-      line["x1"] = w / 1000 * line.x1;
-      line["y1"] = h / 1000 * line.y1;
-      line["x2"] = w / 1000 * line.x2;
-      line["y2"] = h / 1000 * line.y2;
+      line["x1"] = Math.round(w / 1000 * line.x1 * 10) / 10;
+      line["y1"] = Math.round(h / 1000 * line.y1 * 10) / 10;
+      line["x2"] = Math.round(w / 1000 * line.x2 * 10) / 10;
+      line["y2"] = Math.round(h / 1000 * line.y2 * 10) / 10;
 
-      //for (var index in Object.keys(this.state)) {
       this.setState({ codes: this.state.codes.concat([line]) });
-      //}
     }
   }, {
     key: 'render',

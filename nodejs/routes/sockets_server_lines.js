@@ -33,7 +33,7 @@ exports.initialize = function(server) {
 
     counter = counter + 1 //used as timer
 
-  }, 10);
+  }, 5);
 
   //This function will create a new user dictionary and determine properties like startposition, speed etc
   function initNewPlayer(newUser) {
@@ -77,8 +77,8 @@ exports.initialize = function(server) {
 
             if (players[message.user]) {
               //First let everybody know, also the sender, they need to add the ccurent line in the history array before we change its properties
-              socket.broadcast.emit('serverevent', {type : "addline", user: message.user, line : players[message.user] }) //players[message.user] message.line
-              socket.emit('serverevent', {type : "addline", user: message.user,line : players[message.user] })
+              socket.broadcast.emit('serverevent', {type : "addline", user: message.user, line : message.line }) //players[message.user] message.line
+              socket.emit('serverevent', {type : "addline", user: message.user,line : message.line })
 
               //Switch direction of user, and start the new line at end location of previous line.
               players[message.user].direction = message.command

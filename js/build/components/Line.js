@@ -28,14 +28,7 @@ var Line = function (_React$Component) {
   function Line(props) {
     _classCallCheck(this, Line);
 
-    var _this = _possibleConstructorReturn(this, (Line.__proto__ || Object.getPrototypeOf(Line)).call(this, props));
-
-    _this.state = {
-      from: _this.props.from,
-      to: _this.props.to,
-      style: _this.props.style
-    };
-    return _this;
+    return _possibleConstructorReturn(this, (Line.__proto__ || Object.getPrototypeOf(Line)).call(this, props));
   }
 
   _createClass(Line, [{
@@ -44,21 +37,19 @@ var Line = function (_React$Component) {
 
       var from = this.props.from;
       var to = this.props.to;
-      if (to.x < from.x) {
+      if (to.x < from.x || to.y < from.y) {
         from = this.props.to;
         to = this.props.from;
       }
-      //console.log("rendering with state is:  " + JSON.stringify(this.state))
-
-      var len = Math.sqrt(Math.pow(from.x - to.x, 2) + Math.pow(from.y - to.y, 2));
-      var angle = Math.atan((to.y - from.y) / (to.x - from.x));
 
       var style = {
         position: 'absolute',
-        transform: 'translate(' + (from.x - .5 * len * (1 - Math.cos(angle))) + 'px, ' + (from.y + .5 * len * Math.sin(angle)) + 'px) rotate(' + angle + 'rad)',
-        width: len + 'px',
-        height: 0 + 'px',
-        borderBottom: this.props.style || '1px solid black'
+        left: '' + from.x,
+        top: '' + from.y,
+        width: to.x - from.x + 'px',
+        height: to.y - from.y + 'px',
+        borderBottom: this.props.style || '1px solid black',
+        borderLeft: this.props.style || '1px solid black'
       };
 
       return _react2.default.createElement('div', { style: style });
