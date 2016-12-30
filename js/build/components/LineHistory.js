@@ -61,6 +61,10 @@ var LineHistory = function (_React$Component) {
       this.setState({ codes: [] });
     }
 
+    //shouldComponentUpdate(nextProps, nextState) {
+    //  return false;
+    //}
+
     //Add line to our history, triggered after keypress/change of direction of line
 
   }, {
@@ -76,6 +80,7 @@ var LineHistory = function (_React$Component) {
       line["y2"] = Math.round(h / 1000 * line.y2 * 10) / 10;
 
       this.setState({ codes: this.state.codes.concat([line]) });
+      //this.forceUpdate()
     }
   }, {
     key: 'render',
@@ -84,7 +89,7 @@ var LineHistory = function (_React$Component) {
         'div',
         { className: 'Lineio' },
         this.state.codes.map(function (item, index) {
-          return _react2.default.createElement(_Line2.default, { key: index, from: { x: item.x1, y: item.y1 }, to: { x: item.x2, y: item.y2 }, style: item.styling });
+          return _react2.default.createElement(_Line2.default, { key: String(item.name + String(index)), from: { x: item.x1, y: item.y1 }, to: { x: item.x2, y: item.y2 }, style: item.styling });
         })
       );
     }

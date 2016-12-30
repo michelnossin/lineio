@@ -27,6 +27,9 @@ class LineHistory extends React.Component {
     this.setState({ codes : [] });
   }
 
+  //shouldComponentUpdate(nextProps, nextState) {
+  //  return false;
+  //}
 
   //Add line to our history, triggered after keypress/change of direction of line
   addLine(line) {
@@ -40,13 +43,14 @@ class LineHistory extends React.Component {
     line["y2"] = Math.round( ((h/1000) * line.y2) * 10) /10
 
     this.setState({codes : this.state.codes.concat([line])})
+    //this.forceUpdate()
   }
 
   render() {
     return (
       <div className="Lineio" >
       {this.state.codes.map((item,index) => (
-        <Line key={index} from={{x: item.x1, y: item.y1}} to={{x: item.x2, y: item.y2}} style={item.styling} />
+        <Line key={String(item.name + String(index))} from={{x: item.x1, y: item.y1}} to={{x: item.x2, y: item.y2}} style={item.styling} />
       ))}
        </div>
     );

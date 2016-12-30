@@ -48,9 +48,13 @@ var Line = function (_React$Component) {
         top: '' + from.y,
         width: to.x - from.x + 'px',
         height: to.y - from.y + 'px',
-        borderBottom: this.props.style || '1px solid black',
-        borderLeft: this.props.style || '1px solid black'
+        border: this.props.style || '1px solid black'
       };
+
+      //if (to.y == from.y)
+      //  style["borderBottom"] = this.props.style || '1px solid black'
+      //else if (to.x == from.x)
+      //  style["borderLeft"] = this.props.style || '1px solid black'
 
       return _react2.default.createElement('div', { style: style });
     }

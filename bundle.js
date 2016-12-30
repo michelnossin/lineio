@@ -260,9 +260,13 @@ var Line = function (_React$Component) {
         top: '' + from.y,
         width: to.x - from.x + 'px',
         height: to.y - from.y + 'px',
-        borderBottom: this.props.style || '1px solid black',
-        borderLeft: this.props.style || '1px solid black'
+        border: this.props.style || '1px solid black'
       };
+
+      //if (to.y == from.y)
+      //  style["borderBottom"] = this.props.style || '1px solid black'
+      //else if (to.x == from.x)
+      //  style["borderLeft"] = this.props.style || '1px solid black'
 
       return _react2.default.createElement('div', { style: style });
     }
@@ -348,6 +352,10 @@ var LineHistory = function (_React$Component) {
       this.setState({ codes: [] });
     }
 
+    //shouldComponentUpdate(nextProps, nextState) {
+    //  return false;
+    //}
+
     //Add line to our history, triggered after keypress/change of direction of line
 
   }, {
@@ -363,6 +371,7 @@ var LineHistory = function (_React$Component) {
       line["y2"] = Math.round(h / 1000 * line.y2 * 10) / 10;
 
       this.setState({ codes: this.state.codes.concat([line]) });
+      //this.forceUpdate()
     }
   }, {
     key: 'render',
@@ -371,7 +380,7 @@ var LineHistory = function (_React$Component) {
         'div',
         { className: 'Lineio' },
         this.state.codes.map(function (item, index) {
-          return _react2.default.createElement(_Line2.default, { key: index, from: { x: item.x1, y: item.y1 }, to: { x: item.x2, y: item.y2 }, style: item.styling });
+          return _react2.default.createElement(_Line2.default, { key: String(item.name + String(index)), from: { x: item.x1, y: item.y1 }, to: { x: item.x2, y: item.y2 }, style: item.styling });
         })
       );
     }
@@ -515,14 +524,14 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       var keypress = textArray[randomNumber];
       var oldDirection = this.state.position[user].direction;
 
-      if (this.state.position[user].x2 < w * 0.15) {
+      if (this.state.position[user].x2 < w * 0.25) {
         if (oldDirection != "L") keypress = "R";else keypress = "D";
-      } else if (this.state.position[user].y2 < h * 0.15) {
+      } else if (this.state.position[user].y2 < h * 0.25) {
         if (oldDirection != "U") keypress = "D";else keypress = "R";
-      } else if (this.state.position[user].x2 > w * 0.85) {
+      } else if (this.state.position[user].x2 > w * 0.75) {
         if (oldDirection != "R") keypress = "L";else keypress = "U";
         console.log("sending left cmd to correct width " + this.state.position[user].x2);
-      } else if (this.state.position[user].y2 > h * 0.85) {
+      } else if (this.state.position[user].y2 > h * 0.75) {
         if (oldDirection != "D") keypress = "U";else keypress = "R";
         console.log("sending UP cmd to correct height " + this.state.position[user].y2);
       }

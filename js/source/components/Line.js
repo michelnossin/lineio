@@ -16,20 +16,26 @@ class Line extends React.Component {
 
     let from = this.props.from;
     let to = this.props.to;
-    if ((to.x < from.x) || (to.y < from.y)) {
+    if (to.x < from.x || to.y < from.y) {
       from = this.props.to;
       to = this.props.from;
     }
 
-    const style = {
+    var style = {
       position: 'absolute',
       left:`${from.x}`,
       top: `${from.y}`,
       width: `${to.x - from.x }px`,
-      height: `${to.y - from.y}px`,
-      borderBottom: this.props.style || '1px solid black',
-      borderLeft: this.props.style || '1px solid black'
+      height: `${to.y - from.y }px`,
+      border: this.props.style || '1px solid black',
+      //borderBottom: this.props.style || '1px solid black',
+      //borderLeft: this.props.style || '1px solid black'
     };
+
+    //if (to.y == from.y)
+    //  style["borderBottom"] = this.props.style || '1px solid black'
+    //else if (to.x == from.x)
+    //  style["borderLeft"] = this.props.style || '1px solid black'
 
     return <div style={style}></div>;
   }

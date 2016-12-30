@@ -85,25 +85,25 @@ class LineIO extends React.Component {
     var keypress = textArray[randomNumber]
     let oldDirection = this.state.position[user].direction
 
-    if (this.state.position[user].x2 < w*0.15 ) {
+    if (this.state.position[user].x2 < w*0.25 ) {
       if (oldDirection != "L")
         keypress = "R"
       else
         keypress = "D"
     }
-    else if (this.state.position[user].y2 < h*0.15 ) {
+    else if (this.state.position[user].y2 < h*0.25 ) {
       if (oldDirection != "U")
         keypress = "D"
       else keypress = "R"
     }
-    else if (this.state.position[user].x2 > w*0.85 ) {
+    else if (this.state.position[user].x2 > w*0.75 ) {
       if (oldDirection != "R")
         keypress = "L"
       else
         keypress = "U"
       console.log("sending left cmd to correct width " + this.state.position[user].x2 );
     }
-    else if (this.state.position[user].y2 > h*0.85) {
+    else if (this.state.position[user].y2 > h*0.75) {
       if (oldDirection != "D")
         keypress = "U"
       else
