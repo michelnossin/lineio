@@ -2,7 +2,7 @@ import React from 'react';
 import Line from './Line';
 import io from 'socket.io-client'
 import keydown from 'react-keydown';
-let socket = io(`http://localhost:3000`) //our server
+let socket = io(`http://192.168.0.102:3000`) //our server
 let user = "user_" + Math.random().toString(36).substring(7); //Lets give the user a name, todo: let the user make this up
 console.log("Client is using this name: " + user  );
 
@@ -121,38 +121,53 @@ class LineIO extends React.Component {
         keypress = "L"
 
     //normalise position on our virtual 1000x1000 grid
-    var tempy = this.state.position[user]
-    tempy["x1"] = (tempy["x1"] / w) * 1000
-    tempy["y1"] = (tempy["y1"] / h) * 1000
-    tempy["x2"] = (tempy["x2"] / w) * 1000
-    tempy["y2"] = (tempy["y2"] / h) * 1000
+    //var tempy = this.state.position[user]
+    //tempy["x1"] = (tempy["x1"] / w) * 1000
+    //tempy["y1"] = (tempy["y1"] / h) * 1000
+    //tempy["x2"] = (tempy["x2"] / w) * 1000
+    //tempy["y2"] = (tempy["y2"] / h) * 1000
 
-    socket.emit('clientmessage', {type : "userCommand", user: user, command : keypress, line: tempy })
+    socket.emit('clientmessage', {type : "userCommand", user: user, command : keypress })
   }
 
   //client set timer, at this moment only used to simulate key events
   componentDidMount()  {
-    this.timer = setInterval(this.autoKeyPress, 1000); //1 second random movement
+    //this.timer = setInterval(this.autoKeyPress, 2000); //1 second random movement
   }
 
   //keypress reveived to, eg , change the direction of our line
   componentWillReceiveProps( nextProps ) {
+    //let w = window.innerWidth
+    //let h = window.innerHeight
+
     const { keydown: { event } } = nextProps;
     if ( event ) {
-      this.setState( { key: event.which } );
+      //this.setState( { key: event.which } );
 
       //normalise position on our virtual 1000x1000 grid
-      var tempy = this.state.position[user]
-      tempy["x1"] = (tempy["x1"] / w) * 1000
-      tempy["y1"] = (tempy["y1"] / h) * 1000
-      tempy["x2"] = (tempy["x2"] / w) * 1000
-      tempy["y2"] = (tempy["y2"] / h) * 1000
+      //var tempy = this.state.position[user]
+      //tempy["x1"] = (tempy["x1"] / w) * 1000
+      //tempy["y1"] = (tempy["y1"] / h) * 1000
+      //tempy["x2"] = (tempy["x2"] / w) * 1000
+      //tempy["y2"] = (tempy["y2"] / h) * 1000
 
       //Change direction after cursor press //, line: this.state.position[user]
-      if (event.which == 37) { this.sendMessage({type : "userCommand", user: user, command :"L", line: tempy }) }
-      if (event.which == 38) { this.sendMessage({type : "userCommand", user: user, command : "U",line: tempy }) }
-      if (event.which == 39) { this.sendMessage({type : "userCommand", user: user, command : "R",line: tempy }) }
-      if (event.which == 40) { this.sendMessage({type : "userCommand", user: user, command : "D",line: tempy }) }
+      if (event.which == 37) {
+        if (this.state.position[user].direction == "L") return; //prevent sending events if keys is being pressed continu
+        this.sendMessage({type : "userCommand", user: user, command :"L" })
+      }
+      if (event.which == 38) {
+        if (this.state.position[user].direction == "U") return;
+        this.sendMessage({type : "userCommand", user: user, command : "U" })
+      }
+      if (event.which == 39) {
+        if (this.state.position[user].direction == "R") return;
+        this.sendMessage({type : "userCommand", user: user, command : "R" })
+       }
+      if (event.which == 40) {
+        if (this.state.position[user].direction == "D") return;
+        this.sendMessage({type : "userCommand", user: user, command : "D" })
+       }
 
     }
   }

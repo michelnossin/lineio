@@ -26,7 +26,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var socket = (0, _socket2.default)('http://localhost:3000'); //our server
+var socket = (0, _socket2.default)('http://192.168.0.102:3000'); //our server
 
 var LineHistory = function (_React$Component) {
   _inherits(LineHistory, _React$Component);

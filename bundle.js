@@ -334,7 +334,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var socket = (0, _socket2.default)('http://localhost:3000'); //our server
+var socket = (0, _socket2.default)('http://192.168.0.102:3000'); //our server
 
 var LineHistory = function (_React$Component) {
   _inherits(LineHistory, _React$Component);
@@ -457,7 +457,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var socket = (0, _socket2.default)('http://localhost:3000'); //our server
+var socket = (0, _socket2.default)('http://192.168.0.102:3000'); //our server
 var user = "user_" + Math.random().toString(36).substring(7); //Lets give the user a name, todo: let the user make this up
 console.log("Client is using this name: " + user);
 
@@ -564,52 +564,59 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       if (oldDirection == "R" && keypress == "L") keypress = "D";else if (oldDirection == "L" && keypress == "R") keypress = "U";else if (oldDirection == "U" && keypress == "D") keypress = "R";else if (oldDirection == "D" && keypress == "U") keypress = "L";
 
       //normalise position on our virtual 1000x1000 grid
-      var tempy = this.state.position[user];
-      tempy["x1"] = tempy["x1"] / w * 1000;
-      tempy["y1"] = tempy["y1"] / h * 1000;
-      tempy["x2"] = tempy["x2"] / w * 1000;
-      tempy["y2"] = tempy["y2"] / h * 1000;
+      //var tempy = this.state.position[user]
+      //tempy["x1"] = (tempy["x1"] / w) * 1000
+      //tempy["y1"] = (tempy["y1"] / h) * 1000
+      //tempy["x2"] = (tempy["x2"] / w) * 1000
+      //tempy["y2"] = (tempy["y2"] / h) * 1000
 
-      socket.emit('clientmessage', { type: "userCommand", user: user, command: keypress, line: tempy });
+      socket.emit('clientmessage', { type: "userCommand", user: user, command: keypress });
     }
 
     //client set timer, at this moment only used to simulate key events
 
   }, {
     key: 'componentDidMount',
-    value: function componentDidMount() {
-      this.timer = setInterval(this.autoKeyPress, 1000); //1 second random movement
-    }
+    value: function componentDidMount() {}
+    //this.timer = setInterval(this.autoKeyPress, 2000); //1 second random movement
+
 
     //keypress reveived to, eg , change the direction of our line
 
   }, {
     key: 'componentWillReceiveProps',
     value: function componentWillReceiveProps(nextProps) {
+      //let w = window.innerWidth
+      //let h = window.innerHeight
+
       var event = nextProps.keydown.event;
 
       if (event) {
-        this.setState({ key: event.which });
+        //this.setState( { key: event.which } );
 
         //normalise position on our virtual 1000x1000 grid
-        var tempy = this.state.position[user];
-        tempy["x1"] = tempy["x1"] / w * 1000;
-        tempy["y1"] = tempy["y1"] / h * 1000;
-        tempy["x2"] = tempy["x2"] / w * 1000;
-        tempy["y2"] = tempy["y2"] / h * 1000;
+        //var tempy = this.state.position[user]
+        //tempy["x1"] = (tempy["x1"] / w) * 1000
+        //tempy["y1"] = (tempy["y1"] / h) * 1000
+        //tempy["x2"] = (tempy["x2"] / w) * 1000
+        //tempy["y2"] = (tempy["y2"] / h) * 1000
 
         //Change direction after cursor press //, line: this.state.position[user]
         if (event.which == 37) {
-          this.sendMessage({ type: "userCommand", user: user, command: "L", line: tempy });
+          if (this.state.position[user].direction == "L") return; //prevent sending events if keys is being pressed continu
+          this.sendMessage({ type: "userCommand", user: user, command: "L" });
         }
         if (event.which == 38) {
-          this.sendMessage({ type: "userCommand", user: user, command: "U", line: tempy });
+          if (this.state.position[user].direction == "U") return;
+          this.sendMessage({ type: "userCommand", user: user, command: "U" });
         }
         if (event.which == 39) {
-          this.sendMessage({ type: "userCommand", user: user, command: "R", line: tempy });
+          if (this.state.position[user].direction == "R") return;
+          this.sendMessage({ type: "userCommand", user: user, command: "R" });
         }
         if (event.which == 40) {
-          this.sendMessage({ type: "userCommand", user: user, command: "D", line: tempy });
+          if (this.state.position[user].direction == "D") return;
+          this.sendMessage({ type: "userCommand", user: user, command: "D" });
         }
       }
     }
@@ -5438,12 +5445,18 @@ module.exports = hyphenateStyleName;
  * will remain to ensure logic does not differ in production.
  */
 
-function invariant(condition, format, a, b, c, d, e, f) {
-  if (process.env.NODE_ENV !== 'production') {
+var validateFormat = function validateFormat(format) {};
+
+if (process.env.NODE_ENV !== 'production') {
+  validateFormat = function validateFormat(format) {
     if (format === undefined) {
       throw new Error('invariant requires an error message argument');
     }
-  }
+  };
+}
+
+function invariant(condition, format, a, b, c, d, e, f) {
+  validateFormat(format);
 
   if (!condition) {
     var error;
