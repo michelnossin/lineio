@@ -46,7 +46,12 @@ var LineHistory = function (_React$Component) {
       //console.log("Client receives server event type " + ev_msg.type  );
       if (ev_msg.type == 'addline') {
         console.log("Client receives line to addline" + JSON.stringify(ev_msg.line));
-        _this.addLine(ev_msg.line);
+
+        if (parseInt(props.slot) == ev_msg.line.slot)
+          //console.log("Player making this changes used the slot this history line handler users")
+          _this.addLine(ev_msg.line);
+        //else
+        //console.log("Client receives line to addline"
       }
     });
     return _this;
@@ -99,10 +104,13 @@ var LineHistory = function (_React$Component) {
 }(_react2.default.Component);
 
 LineHistory.propTypes = {
-  url: _react2.default.PropTypes.string };
+  url: _react2.default.PropTypes.string, //Not yet used, at some point backend will be added
+  slot: _react2.default.PropTypes.string
+};
 
 LineHistory.defaultProps = {
-  url: "http://localhost:3000/pandaweb/all"
+  url: "http://localhost:3000/pandaweb/all",
+  slot: "-1"
 };
 
 exports.default = LineHistory;

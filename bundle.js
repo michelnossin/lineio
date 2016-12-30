@@ -203,10 +203,27 @@ var _LineHistory2 = _interopRequireDefault(_LineHistory);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+//By splitting realtime lines, and the cumulative hitory of lines we prevent history of being refreshed 50 times per second.
+//Also we split history per slot, to prevent the whole game to be rendered after each keypress of any user.
 _reactDom2.default.render(_react2.default.createElement(
   'div',
   null,
-  _react2.default.createElement(_LineHistory2.default, null),
+  _react2.default.createElement(_LineHistory2.default, { slot: '0' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '1' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '2' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '3' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '4' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '5' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '6' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '7' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '8' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '9' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '10' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '11' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '12' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '13' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '14' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '15' }),
   _react2.default.createElement(_LineIO2.default, null)
 ), document.getElementById('app'));
 },{"./components/LineHistory":5,"./components/LineIO":6,"react":228,"react-dom":63}],4:[function(require,module,exports){
@@ -337,7 +354,12 @@ var LineHistory = function (_React$Component) {
       //console.log("Client receives server event type " + ev_msg.type  );
       if (ev_msg.type == 'addline') {
         console.log("Client receives line to addline" + JSON.stringify(ev_msg.line));
-        _this.addLine(ev_msg.line);
+
+        if (parseInt(props.slot) == ev_msg.line.slot)
+          //console.log("Player making this changes used the slot this history line handler users")
+          _this.addLine(ev_msg.line);
+        //else
+        //console.log("Client receives line to addline"
       }
     });
     return _this;
@@ -390,10 +412,13 @@ var LineHistory = function (_React$Component) {
 }(_react2.default.Component);
 
 LineHistory.propTypes = {
-  url: _react2.default.PropTypes.string };
+  url: _react2.default.PropTypes.string, //Not yet used, at some point backend will be added
+  slot: _react2.default.PropTypes.string
+};
 
 LineHistory.defaultProps = {
-  url: "http://localhost:3000/pandaweb/all"
+  url: "http://localhost:3000/pandaweb/all",
+  slot: "-1"
 };
 
 exports.default = LineHistory;

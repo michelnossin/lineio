@@ -5,12 +5,12 @@ var players = {}  //will contain current positions/speed/direction active player
 //lets init our slots array. It will contain metadata like location to start, speed, direction etc.
 var slots = []
 let playfieldsize = 1000 //playfield is 1000x1000 (virtual)
+var cnt=0
 for (pos = 100; pos <= 400; pos = pos + 100) { //16 players nicely divided
-    var cnt=0
-    slots.push({ slot: 0, direction: "D", styling: "5px solid orange", x1: pos, y1 : pos, x2: pos, y2 : pos,speed : 1})
-    slots.push({ slot: 1, direction: "U", styling: "5px solid yellow", x1: playfieldsize - pos, y1 : playfieldsize - pos, x2: playfieldsize - pos, y2 : playfieldsize - pos,speed : 1})
-    slots.push({ slot: 2, direction: "L", styling: "5px solid blue",x1: playfieldsize - pos, y1 : pos, x2: playfieldsize - pos, y2 : pos,speed : 1})
-    slots.push({ slot: 3, direction: "R", styling: "5px solid red",x1: pos, y1 : playfieldsize - pos, x2: pos, y2 : playfieldsize - pos,speed : 1})
+    slots.push({ slot: 0 + cnt, direction: "D", styling: "5px solid orange", x1: pos, y1 : pos, x2: pos, y2 : pos,speed : 1})
+    slots.push({ slot: 1 + cnt, direction: "U", styling: "5px solid yellow", x1: playfieldsize - pos, y1 : playfieldsize - pos, x2: playfieldsize - pos, y2 : playfieldsize - pos,speed : 1})
+    slots.push({ slot: 2 + cnt, direction: "L", styling: "5px solid blue",x1: playfieldsize - pos, y1 : pos, x2: playfieldsize - pos, y2 : pos,speed : 1})
+    slots.push({ slot: 3 + cnt, direction: "R", styling: "5px solid red",x1: pos, y1 : playfieldsize - pos, x2: pos, y2 : playfieldsize - pos,speed : 1})
     cnt = cnt + 4
 }
 
@@ -33,7 +33,7 @@ exports.initialize = function(server) {
 
     counter = counter + 1 //used as timer
 
-  }, 10);
+  }, 20);
 
   //This function will create a new user dictionary and determine properties like startposition, speed etc
   function initNewPlayer(newUser) {

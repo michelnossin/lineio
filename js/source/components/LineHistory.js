@@ -17,7 +17,12 @@ class LineHistory extends React.Component {
       //console.log("Client receives server event type " + ev_msg.type  );
       if (ev_msg.type == 'addline') {
         console.log("Client receives line to addline" + JSON.stringify(ev_msg.line ));
+
+        if (parseInt(props.slot) == ev_msg.line.slot)
+          //console.log("Player making this changes used the slot this history line handler users")
           this.addLine(ev_msg.line)
+        //else
+          //console.log("Client receives line to addline"
       }
     })
   }
@@ -59,10 +64,12 @@ class LineHistory extends React.Component {
 
 LineHistory.propTypes = {
     url: React.PropTypes.string,  //Not yet used, at some point backend will be added
+    slot: React.PropTypes.string
 };
 
 LineHistory.defaultProps = {
     url: "http://localhost:3000/pandaweb/all",
+    slot: "-1"
 };
 
 export default LineHistory;
