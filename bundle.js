@@ -577,9 +577,9 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
 
   }, {
     key: 'componentDidMount',
-    value: function componentDidMount() {}
-    //this.timer = setInterval(this.autoKeyPress, 2000); //1 second random movement
-
+    value: function componentDidMount() {
+      this.timer = setInterval(this.autoKeyPress, 2000); //1 second random movement
+    }
 
     //keypress reveived to, eg , change the direction of our line
 

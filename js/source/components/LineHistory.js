@@ -18,11 +18,10 @@ class LineHistory extends React.Component {
       if (ev_msg.type == 'addline') {
         console.log("Client receives line to addline" + JSON.stringify(ev_msg.line ));
 
+        //We split historical lines per slot , and give each slot a linehistory object to handled the events.
+        //If the line's player has a slot which matches the slot of this handler lets pick up this event.
         if (parseInt(props.slot) == ev_msg.line.slot)
-          //console.log("Player making this changes used the slot this history line handler users")
           this.addLine(ev_msg.line)
-        //else
-          //console.log("Client receives line to addline"
       }
     })
   }

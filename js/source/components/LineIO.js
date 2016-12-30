@@ -120,19 +120,12 @@ class LineIO extends React.Component {
     else if (oldDirection == "D"  && keypress == "U")
         keypress = "L"
 
-    //normalise position on our virtual 1000x1000 grid
-    //var tempy = this.state.position[user]
-    //tempy["x1"] = (tempy["x1"] / w) * 1000
-    //tempy["y1"] = (tempy["y1"] / h) * 1000
-    //tempy["x2"] = (tempy["x2"] / w) * 1000
-    //tempy["y2"] = (tempy["y2"] / h) * 1000
-
     socket.emit('clientmessage', {type : "userCommand", user: user, command : keypress })
   }
 
   //client set timer, at this moment only used to simulate key events
   componentDidMount()  {
-    //this.timer = setInterval(this.autoKeyPress, 2000); //1 second random movement
+    this.timer = setInterval(this.autoKeyPress, 2000); //1 second random movement
   }
 
   //keypress reveived to, eg , change the direction of our line
@@ -142,14 +135,6 @@ class LineIO extends React.Component {
 
     const { keydown: { event } } = nextProps;
     if ( event ) {
-      //this.setState( { key: event.which } );
-
-      //normalise position on our virtual 1000x1000 grid
-      //var tempy = this.state.position[user]
-      //tempy["x1"] = (tempy["x1"] / w) * 1000
-      //tempy["y1"] = (tempy["y1"] / h) * 1000
-      //tempy["x2"] = (tempy["x2"] / w) * 1000
-      //tempy["y2"] = (tempy["y2"] / h) * 1000
 
       //Change direction after cursor press //, line: this.state.position[user]
       if (event.which == 37) {
@@ -239,17 +224,3 @@ LineIO.defaultProps = {
 };
 
 export default LineIO;
-
-//Some stuff to remove later, might come in handy:
-
-//<div className="Lineio">
-//<a href="#" onClick={ (e) => this.handleClick(e) }>Click me</a>
-//<h1>Message: {this.state.event_msg.message} </h1>
-//<Line from={{x: this.state.x1, y: this.state.y2}} to={{x: this.state.x2, y: this.state.y2}} style="5px solid orange"/>
-// </div>
-
-//Use this code to pass socket to client
-//<Child
-//        socket = { socket }
-//        sendMessage = { this.sendMessage }
-//      />
