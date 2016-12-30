@@ -80,6 +80,9 @@ to Javascript usable by any browser.
 
 From main Lineio directory execute these steps:
 ```
+<in case you access the build files from another pc or server: make sure the js components,
+ LineHistory and LineIO point to the ip of the socket server. Changing the let socket = .. so it does not use localhost>
+
 babel js/source -d js/build
 browserify js/build/app.js -o bundle.js
 LINUX: cat css/*/* css/*.css | sed 's/..\/..\/images/images/g' > bundle.css
@@ -92,4 +95,5 @@ To test the application using the reactjs frontend use we start a different back
 cd <nodejs directory>
 node DataService.js
 Goto http://localhost:3000 , using multiple windows. Click on the link and see the result
+. Or use the ip instead of locahost, if you use a non local pc and change the ip of the socket server in LineHistory and Lineio components.
 ```
