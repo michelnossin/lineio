@@ -122,17 +122,21 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       var textArray = ["D", "U", "R", "L"];
       var randomNumber = Math.floor(Math.random() * textArray.length);
       var keypress = textArray[randomNumber];
-      if (this.state.position[user].x2 < 10) {
-        keypress = "R";
-      } else if (this.state.position[user].y2 < 10) {
-        keypress = "D";
-      } else if (this.state.position[user].x2 > w) {
-        keypress = "L";
+      var oldDirection = this.state.position[user].direction;
+
+      if (this.state.position[user].x2 < w * 0.15) {
+        if (oldDirection != "L") keypress = "R";else keypress = "D";
+      } else if (this.state.position[user].y2 < h * 0.15) {
+        if (oldDirection != "U") keypress = "D";else keypress = "R";
+      } else if (this.state.position[user].x2 > w * 0.85) {
+        if (oldDirection != "R") keypress = "L";else keypress = "U";
         console.log("sending left cmd to correct width " + this.state.position[user].x2);
-      } else if (this.state.position[user].y2 > h) {
-        keypress = "U";
+      } else if (this.state.position[user].y2 > h * 0.85) {
+        if (oldDirection != "D") keypress = "U";else keypress = "R";
         console.log("sending UP cmd to correct height " + this.state.position[user].y2);
       }
+
+      if (oldDirection == "R" && keypress == "L") keypress = "D";else if (oldDirection == "L" && keypress == "R") keypress = "U";else if (oldDirection == "U" && keypress == "D") keypress = "R";else if (oldDirection == "D" && keypress == "U") keypress = "L";
 
       //normalise position on our virtual 1000x1000 grid
       var tempy = this.state.position[user];
