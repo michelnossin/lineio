@@ -20,7 +20,11 @@ exports.initialize = function(server) {
 
   //Send positions to all players each 1/10 th of a second
   setInterval(function(){
-    io.sockets.emit('serverevent', {type : "positions", players: players })
+
+    if (counter%100000 == 0) { //send all positions only once per 100 * 10ms = 1 sec
+      console.log("Send server side positions on time: " + String(counter))
+      io.sockets.emit('serverevent', {type : "positions", players: players })
+    }
 
     //calculate new positions for all players based on speed and direction
     for (var player in players) {
@@ -33,7 +37,7 @@ exports.initialize = function(server) {
 
     counter = counter + 1 //used as timer
 
-  }, 20);
+  }, 10);  //10 ms loop (so 10* 1/1000th of a sec)
 
   //This function will create a new user dictionary and determine properties like startposition, speed etc
   function initNewPlayer(newUser) {
@@ -74,15 +78,21 @@ exports.initialize = function(server) {
           //A user pressed a key to control a line
           else if(message.type == "userCommand"){
             console.log("At time " + counter + " the user " + message.user + " gives command : " + message.command);
+            console.log("line: " + JSON.stringify(message.line));
 
             if (players[message.user]) {
+
               //First let everybody know, also the sender, they need to add the ccurent line in the history array before we change its properties
-              io.sockets.emit('serverevent', {type : "addline", user: message.user, line : players[message.user] })
+              //io.sockets.emit('serverevent', {type : "addline", user: message.user, line : message.line , command: message.command })
+              socket.broadcast.emit('serverevent', {type : "addline", user: message.user, line : message.line , command: message.command })
+              socket.emit('serverevent', {type : "addline", user: message.user, line : message.line , command: message.command })
 
               //Switch direction of user, and start the new line at end location of previous line.
               players[message.user].direction = message.command
-              players[message.user].x1 = players[message.user].x2
-              players[message.user].y1 = players[message.user].y2
+              players[message.user].x1 = message.line.x2
+              players[message.user].x2 = message.line.x2
+              players[message.user].y1 = message.line.y2
+              players[message.user].y2 = message.line.y2
             }
           }
           //After initial connect this will let the new user know its properties, were to start etc.
@@ -91,6 +101,9 @@ exports.initialize = function(server) {
             newplayer = initNewPlayer(message.user)
             socket.emit('serverevent', {type : "serverHandshake", user: newplayer})
             players[message.user] = newplayer
+            console.log("Lets send all players and position to all users so they know each other")
+            io.sockets.emit('serverevent', {type : "positions", players: players })
+
           }
         });
 

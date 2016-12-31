@@ -1,7 +1,7 @@
 import React from 'react';
 import Line from './Line';
 import io from 'socket.io-client'
-let socket = io(`http://192.168.0.102:3000`) //our server
+let socket = io(`http://192.168.0.105:3000`) //our server
 
 class LineHistory extends React.Component {
 

@@ -2,7 +2,7 @@ import React from 'react';
 import Line from './Line';
 import io from 'socket.io-client'
 import keydown from 'react-keydown';
-let socket = io(`http://192.168.0.102:3000`) //our server
+let socket = io(`http://192.168.0.105:3000`) //our server
 let user = "user_" + Math.random().toString(36).substring(7); //Lets give the user a name, todo: let the user make this up
 console.log("Client is using this name: " + user  );
 
@@ -28,6 +28,7 @@ class LineIO extends React.Component {
     this.addLine = this.addLine.bind(this)
     this.autoKeyPress = this.autoKeyPress.bind(this)
     this.resetClient = this.resetClient.bind(this)
+    this.myLoop = this.myLoop.bind(this)
 
     //received connect from server, this will trigger a handshake from our client by saying our name
     socket.on('connect', function() {
@@ -56,9 +57,32 @@ class LineIO extends React.Component {
       }
       //If a user switched line by pressing a cursor key the line has to be added to the lines hstory array so these also will render
       else if (ev_msg.type == 'addline') {
-          this.addLine(ev_msg.line)
+          this.addLine(ev_msg.user,ev_msg.command,ev_msg.line)
       }
     })
+
+  }
+  //shouldComponentUpdate(nextProps, nextState) {
+  //  return false;
+  //}
+
+  //Send positions to all players each 1/10 th of a second
+  myLoop(){
+
+    //calculate new positions for all players based on speed and direction
+    var positions = {}
+    positions = Object.assign({},this.state.position)
+
+    Object.keys(positions).map((player,index) => {
+      if (positions[player].direction == "R") { positions[player].x2 = positions[player].x2 + positions[player].speed }
+      else if (positions[player].direction == "L") { positions[player].x2 = positions[player].x2 - positions[player].speed }
+      else if (positions[player].direction == "U") { positions[player].y2 = positions[player].y2 - positions[player].speed }
+      else if (positions[player].direction == "D") { positions[player].y2 = positions[player].y2 + positions[player].speed }
+    });
+
+    //console.log("Content of players: " + JSON.stringify(positions))
+    this.setState( { position: positions })
+    //this.forceUpdate()
   }
 
   //reset client after connect
@@ -85,6 +109,7 @@ class LineIO extends React.Component {
     var keypress = textArray[randomNumber]
     let oldDirection = this.state.position[user].direction
 
+    //Stear away from the screen borders
     if (this.state.position[user].x2 < w*0.25 ) {
       if (oldDirection != "L")
         keypress = "R"
@@ -111,6 +136,7 @@ class LineIO extends React.Component {
       console.log("sending UP cmd to correct height " + this.state.position[user].y2 );
     }
 
+    //Do not go in opposite direction (180 turn)
     if (oldDirection == "R"  && keypress == "L")
         keypress = "D"
     else if (oldDirection == "L"  && keypress == "R")
@@ -120,18 +146,28 @@ class LineIO extends React.Component {
     else if (oldDirection == "D"  && keypress == "U")
         keypress = "L"
 
-    socket.emit('clientmessage', {type : "userCommand", user: user, command : keypress })
+    //Normalise locations to they fit our 1000x1000 virtual grid
+    var liny = Object.assign({},this.state.position[user])
+    liny.x1 = (liny.x1 / w) * 1000
+    liny.x2 = (liny.x2 / w) * 1000
+    liny.y1 = (liny.y1 / h) * 1000
+    liny.y2 = (liny.y2 / h) * 1000
+
+    //console.log("sending liny : " + JSON.stringify(liny))
+    socket.emit('clientmessage', {type : "userCommand", user: user, command : keypress , line : liny })
   }
 
   //client set timer, at this moment only used to simulate key events
   componentDidMount()  {
-    this.timer = setInterval(this.autoKeyPress, 2000); //1 second random movement
+    this.timerPosition = setInterval(this.myLoop,10);
+    this.timer = setInterval(this.autoKeyPress, 2000); //2 second random movement
+
   }
 
   //keypress reveived to, eg , change the direction of our line
   componentWillReceiveProps( nextProps ) {
-    //let w = window.innerWidth
-    //let h = window.innerHeight
+    let w = window.innerWidth
+    let h = window.innerHeight
 
     const { keydown: { event } } = nextProps;
     if ( event ) {
@@ -139,30 +175,63 @@ class LineIO extends React.Component {
       //Change direction after cursor press //, line: this.state.position[user]
       if (event.which == 37) {
         if (this.state.position[user].direction == "L") return; //prevent sending events if keys is being pressed continu
-        this.sendMessage({type : "userCommand", user: user, command :"L" })
+        var liny = Object.assign({},this.state.position[user])
+        liny.x1 = (liny.x1 / w) * 1000
+        liny.x2 = (liny.x2 / w) * 1000
+        liny.y1 = (liny.y1 / h) * 1000
+        liny.y2 = (liny.y2 / h) * 1000
+
+        this.sendMessage({type : "userCommand", user: user, command :"L" , line : liny})
       }
       if (event.which == 38) {
         if (this.state.position[user].direction == "U") return;
-        this.sendMessage({type : "userCommand", user: user, command : "U" })
+        var liny = Object.assign({},this.state.position[user])
+        liny.x1 = (liny.x1 / w) * 1000
+        liny.x2 = (liny.x2 / w) * 1000
+        liny.y1 = (liny.y1 / h) * 1000
+        liny.y2 = (liny.y2 / h) * 1000
+        this.sendMessage({type : "userCommand", user: user, command : "U", line : liny })
       }
       if (event.which == 39) {
         if (this.state.position[user].direction == "R") return;
-        this.sendMessage({type : "userCommand", user: user, command : "R" })
+        var liny = Object.assign({},this.state.position[user])
+        liny.x1 = (liny.x1 / w) * 1000
+        liny.x2 = (liny.x2 / w) * 1000
+        liny.y1 = (liny.y1 / h) * 1000
+        liny.y2 = (liny.y2 / h) * 1000
+        this.sendMessage({type : "userCommand", user: user, command : "R", line : liny })
        }
       if (event.which == 40) {
         if (this.state.position[user].direction == "D") return;
-        this.sendMessage({type : "userCommand", user: user, command : "D" })
+        var liny = Object.assign({},this.state.position[user])
+        liny.x1 = (liny.x1 / w) * 1000
+        liny.x2 = (liny.x2 / w) * 1000
+        liny.y1 = (liny.y1 / h) * 1000
+        liny.y2 = (liny.y2 / h) * 1000
+        this.sendMessage({type : "userCommand", user: user, command : "D",line : liny })
        }
 
     }
   }
 
-  //Add line to our history, triggered after keypress/change of direction of line
-  addLine(username) {
-      //this.setState({
-        //lines: this.state.lines.concat(this.state.position[username])
+  //Add line is an event received marking the end of the last active line for a user
+  //In linehistory that will just paint the old line. In lineIo (so here) it will change the direction and location of the active line for that user
+  addLine(userTrigger,command,line) {
+      console.log("addline: " + JSON.stringify(userTrigger)  + " command " + JSON.stringify(command) +  " line " + JSON.stringify(line));
+       var position = Object.assign({},this.state.position)
+       let w = window.innerWidth
+       let h = window.innerHeight
 
-      //});
+       position[userTrigger].x1 = (w/1000) * line.x2
+       position[userTrigger].x2 = (w/1000) * line.x2
+       position[userTrigger].y1 = (h/1000) * line.y2
+       position[userTrigger].y2 = (h/1000) * line.y2
+       //position[userTrigger].x1 = position[userTrigger].x2
+       //position[userTrigger].y1 = position[userTrigger].y2
+       position[userTrigger].direction = command
+
+      this.setState({
+        position: position })
     }
 
   //Send event message to server, for example to let others know we change our line direction
@@ -175,8 +244,10 @@ class LineIO extends React.Component {
     this.setState({event_msg : { message : server_msg }})
   }
 
-  //We receive position of all player lines each .. period
+  //We receive position of all player lines each .. period from the server to correct any difference calculated on the clients
   receivePositions(positions) {
+    console.log("received server positions for all players")
+
     let w = window.innerWidth
     let h = window.innerHeight
 
@@ -187,7 +258,6 @@ class LineIO extends React.Component {
       positions[username]["x2"] = (w/1000) * positions[username].x2
       positions[username]["y2"] = (h/1000) * positions[username].y2
 
-      //console.log("active line at pos" + JSON.stringify(positions ));
       this.setState( { position: positions })
       //this.forceUpdate()
     })
