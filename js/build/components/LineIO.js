@@ -32,7 +32,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var socket = (0, _socket2.default)('http://192.168.0.105:3000'); //our server
+var socket = (0, _socket2.default)('http://192.168.0.102:3000'); //our server 192.168.0.105
 var user = "user_" + Math.random().toString(36).substring(7); //Lets give the user a name, todo: let the user make this up
 console.log("Client is using this name: " + user);
 
@@ -95,11 +95,9 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
 
     return _this;
   }
-
   //shouldComponentUpdate(nextProps, nextState) {
   //  return false;
   //}
-
 
   //Send positions to all players each 1/10 th of a second
 
@@ -158,6 +156,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       var keypress = textArray[randomNumber];
       var oldDirection = this.state.position[user].direction;
 
+      //Stear away from the screen borders
       if (this.state.position[user].x2 < w * 0.25) {
         if (oldDirection != "L") keypress = "R";else keypress = "D";
       } else if (this.state.position[user].y2 < h * 0.25) {
@@ -170,15 +169,17 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         console.log("sending UP cmd to correct height " + this.state.position[user].y2);
       }
 
+      //Do not go in opposite direction (180 turn)
       if (oldDirection == "R" && keypress == "L") keypress = "D";else if (oldDirection == "L" && keypress == "R") keypress = "U";else if (oldDirection == "U" && keypress == "D") keypress = "R";else if (oldDirection == "D" && keypress == "U") keypress = "L";
 
+      //Normalise locations to they fit our 1000x1000 virtual grid
       var liny = Object.assign({}, this.state.position[user]);
       liny.x1 = liny.x1 / w * 1000;
       liny.x2 = liny.x2 / w * 1000;
       liny.y1 = liny.y1 / h * 1000;
       liny.y2 = liny.y2 / h * 1000;
 
-      console.log("sending liny : " + JSON.stringify(liny));
+      //console.log("sending liny : " + JSON.stringify(liny))
       socket.emit('clientmessage', { type: "userCommand", user: user, command: keypress, line: liny });
     }
 
@@ -187,7 +188,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
   }, {
     key: 'componentDidMount',
     value: function componentDidMount() {
-      this.timerPosition = setInterval(this.myLoop, 10);
+      this.timerPosition = setInterval(this.myLoop, 5);
       this.timer = setInterval(this.autoKeyPress, 2000); //2 second random movement
     }
 

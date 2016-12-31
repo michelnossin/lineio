@@ -37,7 +37,7 @@ exports.initialize = function(server) {
 
     counter = counter + 1 //used as timer
 
-  }, 10);  //10 ms loop (so 10* 1/1000th of a sec)
+  }, 5);  //10 ms loop (so 10* 1/1000th of a sec)
 
   //This function will create a new user dictionary and determine properties like startposition, speed etc
   function initNewPlayer(newUser) {

@@ -2,7 +2,7 @@ import React from 'react';
 import Line from './Line';
 import io from 'socket.io-client'
 import keydown from 'react-keydown';
-let socket = io(`http://192.168.0.105:3000`) //our server
+let socket = io(`http://192.168.0.102:3000`) //our server 192.168.0.105
 let user = "user_" + Math.random().toString(36).substring(7); //Lets give the user a name, todo: let the user make this up
 console.log("Client is using this name: " + user  );
 
@@ -159,7 +159,7 @@ class LineIO extends React.Component {
 
   //client set timer, at this moment only used to simulate key events
   componentDidMount()  {
-    this.timerPosition = setInterval(this.myLoop,10);
+    this.timerPosition = setInterval(this.myLoop,5);
     this.timer = setInterval(this.autoKeyPress, 2000); //2 second random movement
 
   }
