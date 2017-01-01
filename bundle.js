@@ -334,7 +334,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var socket = (0, _socket2.default)('http://192.168.0.102:3000'); //our server 192.168.0.105
+var socket = (0, _socket2.default)('http://192.168.0.105:3000'); //our server 192.168.0.105
 
 var LineHistory = function (_React$Component) {
   _inherits(LineHistory, _React$Component);
@@ -353,23 +353,48 @@ var LineHistory = function (_React$Component) {
     socket.on('serverevent', function (ev_msg) {
       //console.log("Client receives server event type " + ev_msg.type  );
       if (ev_msg.type == 'addline') {
-        console.log("Client receives line to addline" + JSON.stringify(ev_msg.line));
+        //console.log("Client receives line to addline" + JSON.stringify(ev_msg.line ));
 
         //We split historical lines per slot , and give each slot a linehistory object to handled the events.
         //If the line's player has a slot which matches the slot of this handler lets pick up this event.
         if (parseInt(props.slot) == ev_msg.line.slot) _this.addLine(ev_msg.line);
+      } else if (ev_msg.type == 'resetclients') {
+        console.log("Client history lines resetting after server request");
+        _this.resetClient();
+      } else if (ev_msg.type == 'removeUser') {
+        console.log("Remove from history: lines from user " + ev_msg.user);
+        var codes = Object.assign([], _this.state.codes);
+        codes = codes.filter(function (itm) {
+          return itm["name"] !== ev_msg.user;
+        });
+        _this.setState({ codes: codes });
       }
     });
     return _this;
   }
 
-  //reset client after connect
-
-
   _createClass(LineHistory, [{
+    key: 'componentWillMount',
+    value: function componentWillMount() {
+      var self = this;
+      socket.on('connect', function (data) {
+        console.log("Client was connected to history dispatcher ");
+        //self.setState({messages: data})
+        //self.resetClient()
+      });
+      socket.on('disconnect', function () {
+        console.log("Client was disconnected , clearing client within history dispatcher");
+        self.resetClient();
+      });
+    }
+
+    //reset client after connect
+
+  }, {
     key: 'resetClient',
     value: function resetClient() {
       this.setState({ codes: [] });
+      this.forceUpdate();
     }
 
     //shouldComponentUpdate(nextProps, nextState) {
@@ -455,7 +480,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var socket = (0, _socket2.default)('http://192.168.0.102:3000'); //our server 192.168.0.105
+var socket = (0, _socket2.default)('http://192.168.0.105:3000'); //our server 192.168.0.105
 var user = "user_" + Math.random().toString(36).substring(7); //Lets give the user a name, todo: let the user make this up
 console.log("Client is using this name: " + user);
 
@@ -468,7 +493,8 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (LineIO.__proto__ || Object.getPrototypeOf(LineIO)).call(this, props));
 
     var dict = {};
-    dict[user] = { x1: 0, y1: 0, x2: 0, y2: 0 };
+    //dict[user] = {x1:0,y1:0,x2:0,y2:0}
+    //dict[user] = {x1:0,y1:0,x2:0,y2:0}
 
     _this.state = {
       event_msg: {}, //message from server
@@ -477,6 +503,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       lines: [] //list of all non current lines
     };
 
+    //this.isConnected = 0
     _this.sendMessage = _this.sendMessage.bind(_this);
     _this.receiveMessage = _this.receiveMessage.bind(_this);
     _this.receivePositions = _this.receivePositions.bind(_this);
@@ -484,13 +511,6 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
     _this.autoKeyPress = _this.autoKeyPress.bind(_this);
     _this.resetClient = _this.resetClient.bind(_this);
     _this.myLoop = _this.myLoop.bind(_this);
-
-    //received connect from server, this will trigger a handshake from our client by saying our name
-    socket.on('connect', function () {
-      console.log("Client receives connect event");
-      console.log("Client sends handshake to server with username " + user);
-      socket.emit('clientmessage', { type: "userHandshake", user: user });
-    });
 
     //receive event from server
     socket.on('serverevent', function (ev_msg) {
@@ -501,11 +521,13 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       }
       //each short period we will get all latest positions of all users
       else if (ev_msg.type == 'positions') {
+          console.log("Client received all player locations");
           _this.receivePositions(ev_msg.players);
         }
         //Init client based on server properties as determined
         else if (ev_msg.type == 'serverHandshake') {
-            _this.resetClient();
+            //this.resetClient()
+            console.log("Server handshake received by client");
             var dict = {};
             dict[user] = ev_msg.user;
             _this.setState({ position: dict });
@@ -513,11 +535,21 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
           //If a user switched line by pressing a cursor key the line has to be added to the lines hstory array so these also will render
           else if (ev_msg.type == 'addline') {
               _this.addLine(ev_msg.user, ev_msg.command, ev_msg.line);
+            } else if (ev_msg.type == 'resetclients') {
+              console.log("Client resetting after server request");
+              _this.resetClient();
+            } else if (ev_msg.type == 'removeUser') {
+              console.log("Another user named " + ev_msg.user + " is gone, lets remove this user");
+              var positions = {};
+              positions = Object.assign({}, _this.state.position);
+              delete positions[ev_msg.user];
+              _this.setState({ position: positions });
             }
     });
 
     return _this;
   }
+
   //shouldComponentUpdate(nextProps, nextState) {
   //  return false;
   //}
@@ -528,7 +560,6 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
   _createClass(LineIO, [{
     key: 'myLoop',
     value: function myLoop() {
-
       //calculate new positions for all players based on speed and direction
       var positions = {};
       positions = Object.assign({}, this.state.position);
@@ -545,7 +576,6 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         }
       });
 
-      //console.log("Content of players: " + JSON.stringify(positions))
       this.setState({ position: positions });
       //this.forceUpdate()
     }
@@ -557,13 +587,14 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
     value: function resetClient() {
       //Clear everything after server restart
       var dict = {};
-      dict[user] = { x1: 0, y1: 0, x2: 0, y2: 0 };
+      //dict[user] = {x1:0,y1:0,x2:0,y2:0}
       this.setState({
         event_msg: {}, //message from server
         position: dict,
         key: 'n/a', //key pressed
         lines: [] //list of all non current lines
       });
+      this.forceUpdate();
     }
 
     //Generate random control command, handy for simulation of multipley players.
@@ -577,6 +608,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       var textArray = ["D", "U", "R", "L"];
       var randomNumber = Math.floor(Math.random() * textArray.length);
       var keypress = textArray[randomNumber];
+      //let oldDirection = Object.assign(this.state.position[user].direction)
       var oldDirection = this.state.position[user].direction;
 
       //Stear away from the screen borders
@@ -586,10 +618,10 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         if (oldDirection != "U") keypress = "D";else keypress = "R";
       } else if (this.state.position[user].x2 > w * 0.75) {
         if (oldDirection != "R") keypress = "L";else keypress = "U";
-        console.log("sending left cmd to correct width " + this.state.position[user].x2);
+        //console.log("sending left cmd to correct width " + this.state.position[user].x2 );
       } else if (this.state.position[user].y2 > h * 0.75) {
         if (oldDirection != "D") keypress = "U";else keypress = "R";
-        console.log("sending UP cmd to correct height " + this.state.position[user].y2);
+        //console.log("sending UP cmd to correct height " + this.state.position[user].y2 );
       }
 
       //Do not go in opposite direction (180 turn)
@@ -602,7 +634,6 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       liny.y1 = liny.y1 / h * 1000;
       liny.y2 = liny.y2 / h * 1000;
 
-      //console.log("sending liny : " + JSON.stringify(liny))
       socket.emit('clientmessage', { type: "userCommand", user: user, command: keypress, line: liny });
     }
 
@@ -611,8 +642,30 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
   }, {
     key: 'componentDidMount',
     value: function componentDidMount() {
-      this.timerPosition = setInterval(this.myLoop, 5);
-      this.timer = setInterval(this.autoKeyPress, 2000); //2 second random movement
+      this.timerPosition = setInterval(this.myLoop, 5); //will move the active player lines
+      this.timer = setInterval(this.autoKeyPress, 500); //2 second random movement by clicking some cursor keys
+
+      var self = this;
+      socket.on('connect', function (data) {
+        console.log("Client receives connect event, clearing client");
+        self.resetClient();
+        console.log("Client sends handshake to server with username " + user);
+        socket.emit('clientmessage', { type: "userHandshake", user: user });
+      });
+      socket.on('disconnect', function () {
+        console.log("Client was disconnected , clearing client");
+        self.resetClient();
+      });
+    }
+
+    //Stop timers afterwards
+
+  }, {
+    key: 'componentWillUnmount',
+    value: function componentWillUnmount() {
+      clearInterval(this.timerPosition);
+      clearInterval(this.timer);
+      socket.emit('clientmessage', { type: "removeUser", user: user });
     }
 
     //keypress reveived to, eg , change the direction of our line
@@ -631,6 +684,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         if (event.which == 37) {
           if (this.state.position[user].direction == "L") return; //prevent sending events if keys is being pressed continu
           var liny = Object.assign({}, this.state.position[user]);
+
           liny.x1 = liny.x1 / w * 1000;
           liny.x2 = liny.x2 / w * 1000;
           liny.y1 = liny.y1 / h * 1000;
@@ -674,7 +728,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
   }, {
     key: 'addLine',
     value: function addLine(userTrigger, command, line) {
-      console.log("addline: " + JSON.stringify(userTrigger) + " command " + JSON.stringify(command) + " line " + JSON.stringify(line));
+      //console.log("addline: " + JSON.stringify(userTrigger)  + " command " + JSON.stringify(command) +  " line " + JSON.stringify(line));
       var position = Object.assign({}, this.state.position);
       var w = window.innerWidth;
       var h = window.innerHeight;
@@ -682,10 +736,16 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       position[userTrigger].x1 = w / 1000 * line.x2;
       position[userTrigger].x2 = w / 1000 * line.x2;
       position[userTrigger].y1 = h / 1000 * line.y2;
+      //console.log("y1 position changed by addline " + JSON.stringify(position[userTrigger].y1) + " for user " + JSON.stringify(userTrigger) + " for slot " + JSON.stringify(line.slot))
       position[userTrigger].y2 = h / 1000 * line.y2;
+
       //position[userTrigger].x1 = position[userTrigger].x2
       //position[userTrigger].y1 = position[userTrigger].y2
+
       position[userTrigger].direction = command;
+
+      //if (userTrigger != user)
+      //  console.log("add line postion: " + JSON.stringify(position[userTrigger] ))
 
       this.setState({
         position: position });

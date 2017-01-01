@@ -17,6 +17,7 @@ for (pos = 100; pos <= 400; pos = pos + 100) { //16 players nicely divided
 //Start the socket server
 exports.initialize = function(server) {
   io = io.listen(server);
+  io.sockets.emit('serverevent', {type : "resetclients"})
 
   //Send positions to all players each 1/10 th of a second
   setInterval(function(){
@@ -39,8 +40,18 @@ exports.initialize = function(server) {
 
   }, 5);  //10 ms loop (so 10* 1/1000th of a sec)
 
+  //If a players leaves us lets remove it and let all know
+  function removePlayer(socket) {
+    for (var player in players) {
+      if (players[player]["socketid"] == socket.id) {
+          delete players[player];
+          socket.broadcast.emit('serverevent', {type : "removeUser", user: player})
+        }
+    }
+  }
+
   //This function will create a new user dictionary and determine properties like startposition, speed etc
-  function initNewPlayer(newUser) {
+  function initNewPlayer(newUser,socketId) {
 
     //Determine slot nr to use (the lowest free slot nr), and use it's slot metadata as properties for the new user
     for (slot = 0; slot <= 15; slot++) {
@@ -52,6 +63,7 @@ exports.initialize = function(server) {
         console.log("slot nr " + slot + " is the lowest free slot, assigning to user " + newUser );
         var newPlayer = slots[slot]
         newPlayer["name"] = newUser
+        newPlayer["socketid"] = socketId
         return newPlayer
       }
     }
@@ -61,10 +73,18 @@ exports.initialize = function(server) {
     return {}
   }
 
+
   //server receives connect event from client
   io.sockets.on("connection", function(socket){
-    console.log("Client is connected to server," );
+    console.log("Client is connected to server" );
     //socket.emit('serverevent', {type : "resetGame"}) //After server restart clear all clients and demand client handshakes
+
+    //USer is gone, remove from our list
+    socket.on("disconnect",function(){
+      console.log("At time " + counter + " the user has disconnected. this is the socket: "  )
+      removePlayer(socket)
+
+    })
 
     //server receives custom event from client
     socket.on('clientmessage', function(message){
@@ -98,13 +118,14 @@ exports.initialize = function(server) {
           //After initial connect this will let the new user know its properties, were to start etc.
           else if(message.type == "userHandshake"){
             console.log("At time " + counter + " the user " + message.user + " wants to play. Adding to slot and reply with handshake");
-            newplayer = initNewPlayer(message.user)
+            newplayer = initNewPlayer(message.user,socket.id)
             socket.emit('serverevent', {type : "serverHandshake", user: newplayer})
             players[message.user] = newplayer
             console.log("Lets send all players and position to all users so they know each other")
             io.sockets.emit('serverevent', {type : "positions", players: players })
 
           }
+
         });
 
   });

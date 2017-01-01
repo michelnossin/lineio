@@ -26,7 +26,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var socket = (0, _socket2.default)('http://192.168.0.102:3000'); //our server 192.168.0.105
+var socket = (0, _socket2.default)('http://192.168.0.105:3000'); //our server 192.168.0.105
 
 var LineHistory = function (_React$Component) {
   _inherits(LineHistory, _React$Component);
@@ -45,23 +45,48 @@ var LineHistory = function (_React$Component) {
     socket.on('serverevent', function (ev_msg) {
       //console.log("Client receives server event type " + ev_msg.type  );
       if (ev_msg.type == 'addline') {
-        console.log("Client receives line to addline" + JSON.stringify(ev_msg.line));
+        //console.log("Client receives line to addline" + JSON.stringify(ev_msg.line ));
 
         //We split historical lines per slot , and give each slot a linehistory object to handled the events.
         //If the line's player has a slot which matches the slot of this handler lets pick up this event.
         if (parseInt(props.slot) == ev_msg.line.slot) _this.addLine(ev_msg.line);
+      } else if (ev_msg.type == 'resetclients') {
+        console.log("Client history lines resetting after server request");
+        _this.resetClient();
+      } else if (ev_msg.type == 'removeUser') {
+        console.log("Remove from history: lines from user " + ev_msg.user);
+        var codes = Object.assign([], _this.state.codes);
+        codes = codes.filter(function (itm) {
+          return itm["name"] !== ev_msg.user;
+        });
+        _this.setState({ codes: codes });
       }
     });
     return _this;
   }
 
-  //reset client after connect
-
-
   _createClass(LineHistory, [{
+    key: 'componentWillMount',
+    value: function componentWillMount() {
+      var self = this;
+      socket.on('connect', function (data) {
+        console.log("Client was connected to history dispatcher ");
+        //self.setState({messages: data})
+        //self.resetClient()
+      });
+      socket.on('disconnect', function () {
+        console.log("Client was disconnected , clearing client within history dispatcher");
+        self.resetClient();
+      });
+    }
+
+    //reset client after connect
+
+  }, {
     key: 'resetClient',
     value: function resetClient() {
       this.setState({ codes: [] });
+      this.forceUpdate();
     }
 
     //shouldComponentUpdate(nextProps, nextState) {

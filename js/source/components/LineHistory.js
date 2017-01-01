@@ -1,7 +1,7 @@
 import React from 'react';
 import Line from './Line';
 import io from 'socket.io-client'
-let socket = io(`http://192.168.0.102:3000`) //our server 192.168.0.105
+let socket = io(`http://192.168.0.105:3000`) //our server 192.168.0.105
 
 class LineHistory extends React.Component {
 
@@ -16,19 +16,43 @@ class LineHistory extends React.Component {
     socket.on('serverevent', ev_msg => {
       //console.log("Client receives server event type " + ev_msg.type  );
       if (ev_msg.type == 'addline') {
-        console.log("Client receives line to addline" + JSON.stringify(ev_msg.line ));
+        //console.log("Client receives line to addline" + JSON.stringify(ev_msg.line ));
 
         //We split historical lines per slot , and give each slot a linehistory object to handled the events.
         //If the line's player has a slot which matches the slot of this handler lets pick up this event.
         if (parseInt(props.slot) == ev_msg.line.slot)
           this.addLine(ev_msg.line)
       }
+      else if (ev_msg.type == 'resetclients') {
+          console.log("Client history lines resetting after server request")
+          this.resetClient()
+      }
+      else if (ev_msg.type == 'removeUser') {
+          console.log("Remove from history: lines from user " + ev_msg.user )
+          var codes = Object.assign([],this.state.codes)
+          codes=codes.filter(function(itm){return itm["name"]!==ev_msg.user});
+          this.setState( { codes: codes })
+      }
+    })
+  }
+
+  componentWillMount(){
+    var self = this;
+    socket.on('connect', function (data) {
+      console.log("Client was connected to history dispatcher "  );
+      //self.setState({messages: data})
+      //self.resetClient()
+    });
+    socket.on('disconnect', function() {
+      console.log("Client was disconnected , clearing client within history dispatcher"  );
+      self.resetClient()
     })
   }
 
   //reset client after connect
   resetClient() {
     this.setState({ codes : [] });
+    this.forceUpdate()
   }
 
   //shouldComponentUpdate(nextProps, nextState) {

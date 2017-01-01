@@ -2,7 +2,7 @@ import React from 'react';
 import Line from './Line';
 import io from 'socket.io-client'
 import keydown from 'react-keydown';
-let socket = io(`http://192.168.0.102:3000`) //our server 192.168.0.105
+let socket = io(`http://192.168.0.105:3000`) //our server 192.168.0.105
 let user = "user_" + Math.random().toString(36).substring(7); //Lets give the user a name, todo: let the user make this up
 console.log("Client is using this name: " + user  );
 
@@ -13,7 +13,8 @@ class LineIO extends React.Component {
     super(props);
 
     var dict = {}
-    dict[user] = {x1:0,y1:0,x2:0,y2:0}
+    //dict[user] = {x1:0,y1:0,x2:0,y2:0}
+    //dict[user] = {x1:0,y1:0,x2:0,y2:0}
 
     this.state = {
         event_msg: {}, //message from server
@@ -22,6 +23,7 @@ class LineIO extends React.Component {
         lines : []  //list of all non current lines
     };
 
+    //this.isConnected = 0
     this.sendMessage = this.sendMessage.bind(this)
     this.receiveMessage = this.receiveMessage.bind(this)
     this.receivePositions = this.receivePositions.bind(this)
@@ -29,13 +31,6 @@ class LineIO extends React.Component {
     this.autoKeyPress = this.autoKeyPress.bind(this)
     this.resetClient = this.resetClient.bind(this)
     this.myLoop = this.myLoop.bind(this)
-
-    //received connect from server, this will trigger a handshake from our client by saying our name
-    socket.on('connect', function() {
-      console.log("Client receives connect event"  );
-      console.log("Client sends handshake to server with username " + user  );
-      socket.emit('clientmessage', { type: "userHandshake", user: user })
-    })
 
     //receive event from server
     socket.on('serverevent', ev_msg => {
@@ -46,29 +41,43 @@ class LineIO extends React.Component {
       }
       //each short period we will get all latest positions of all users
       else if (ev_msg.type == 'positions') {
+        console.log("Client received all player locations")
         this.receivePositions(ev_msg.players)
        }
       //Init client based on server properties as determined
       else if (ev_msg.type == 'serverHandshake') {
-        this.resetClient()
+        //this.resetClient()
+        console.log("Server handshake received by client")
         var dict = {}
         dict[user] = ev_msg.user
         this.setState( { position: dict })
+
       }
       //If a user switched line by pressing a cursor key the line has to be added to the lines hstory array so these also will render
       else if (ev_msg.type == 'addline') {
           this.addLine(ev_msg.user,ev_msg.command,ev_msg.line)
       }
+      else if (ev_msg.type == 'resetclients') {
+          console.log("Client resetting after server request")
+          this.resetClient()
+      }
+      else if (ev_msg.type == 'removeUser') {
+          console.log("Another user named " + ev_msg.user + " is gone, lets remove this user")
+          var positions = {}
+          positions = Object.assign({},this.state.position)
+          delete positions[ev_msg.user];
+          this.setState( { position: positions })
+      }
     })
 
   }
+
   //shouldComponentUpdate(nextProps, nextState) {
   //  return false;
   //}
 
   //Send positions to all players each 1/10 th of a second
   myLoop(){
-
     //calculate new positions for all players based on speed and direction
     var positions = {}
     positions = Object.assign({},this.state.position)
@@ -80,7 +89,6 @@ class LineIO extends React.Component {
       else if (positions[player].direction == "D") { positions[player].y2 = positions[player].y2 + positions[player].speed }
     });
 
-    //console.log("Content of players: " + JSON.stringify(positions))
     this.setState( { position: positions })
     //this.forceUpdate()
   }
@@ -89,13 +97,14 @@ class LineIO extends React.Component {
   resetClient() {
     //Clear everything after server restart
     var dict = {}
-    dict[user] = {x1:0,y1:0,x2:0,y2:0}
+    //dict[user] = {x1:0,y1:0,x2:0,y2:0}
     this.setState({
       event_msg: {}, //message from server
       position: dict,
       key: 'n/a', //key pressed
       lines : []  //list of all non current lines
     });
+    this.forceUpdate()
 
   }
 
@@ -107,6 +116,7 @@ class LineIO extends React.Component {
     var textArray = ["D","U","R","L"];
     var randomNumber = Math.floor(Math.random()*textArray.length);
     var keypress = textArray[randomNumber]
+    //let oldDirection = Object.assign(this.state.position[user].direction)
     let oldDirection = this.state.position[user].direction
 
     //Stear away from the screen borders
@@ -126,14 +136,14 @@ class LineIO extends React.Component {
         keypress = "L"
       else
         keypress = "U"
-      console.log("sending left cmd to correct width " + this.state.position[user].x2 );
+      //console.log("sending left cmd to correct width " + this.state.position[user].x2 );
     }
     else if (this.state.position[user].y2 > h*0.75) {
       if (oldDirection != "D")
         keypress = "U"
       else
         keypress = "R"
-      console.log("sending UP cmd to correct height " + this.state.position[user].y2 );
+      //console.log("sending UP cmd to correct height " + this.state.position[user].y2 );
     }
 
     //Do not go in opposite direction (180 turn)
@@ -153,16 +163,37 @@ class LineIO extends React.Component {
     liny.y1 = (liny.y1 / h) * 1000
     liny.y2 = (liny.y2 / h) * 1000
 
-    //console.log("sending liny : " + JSON.stringify(liny))
     socket.emit('clientmessage', {type : "userCommand", user: user, command : keypress , line : liny })
   }
 
   //client set timer, at this moment only used to simulate key events
   componentDidMount()  {
-    this.timerPosition = setInterval(this.myLoop,5);
-    this.timer = setInterval(this.autoKeyPress, 2000); //2 second random movement
+    this.timerPosition = setInterval(this.myLoop,5); //will move the active player lines
+    this.timer = setInterval(this.autoKeyPress, 500); //2 second random movement by clicking some cursor keys
+
+    var self = this;
+    socket.on('connect', function (data) {
+      console.log("Client receives connect event, clearing client"  );
+      self.resetClient()
+      console.log("Client sends handshake to server with username " + user  );
+      socket.emit('clientmessage', { type: "userHandshake", user: user })
+    });
+    socket.on('disconnect', function() {
+      console.log("Client was disconnected , clearing client"  );
+      self.resetClient()
+    })
+
 
   }
+
+  //Stop timers afterwards
+  componentWillUnmount() {
+    clearInterval(this.timerPosition);
+    clearInterval(this.timer);
+    socket.emit('clientmessage', {type : "removeUser", user: user})
+  }
+
+
 
   //keypress reveived to, eg , change the direction of our line
   componentWillReceiveProps( nextProps ) {
@@ -176,6 +207,7 @@ class LineIO extends React.Component {
       if (event.which == 37) {
         if (this.state.position[user].direction == "L") return; //prevent sending events if keys is being pressed continu
         var liny = Object.assign({},this.state.position[user])
+
         liny.x1 = (liny.x1 / w) * 1000
         liny.x2 = (liny.x2 / w) * 1000
         liny.y1 = (liny.y1 / h) * 1000
@@ -217,7 +249,7 @@ class LineIO extends React.Component {
   //Add line is an event received marking the end of the last active line for a user
   //In linehistory that will just paint the old line. In lineIo (so here) it will change the direction and location of the active line for that user
   addLine(userTrigger,command,line) {
-      console.log("addline: " + JSON.stringify(userTrigger)  + " command " + JSON.stringify(command) +  " line " + JSON.stringify(line));
+      //console.log("addline: " + JSON.stringify(userTrigger)  + " command " + JSON.stringify(command) +  " line " + JSON.stringify(line));
        var position = Object.assign({},this.state.position)
        let w = window.innerWidth
        let h = window.innerHeight
@@ -225,10 +257,16 @@ class LineIO extends React.Component {
        position[userTrigger].x1 = (w/1000) * line.x2
        position[userTrigger].x2 = (w/1000) * line.x2
        position[userTrigger].y1 = (h/1000) * line.y2
+       //console.log("y1 position changed by addline " + JSON.stringify(position[userTrigger].y1) + " for user " + JSON.stringify(userTrigger) + " for slot " + JSON.stringify(line.slot))
        position[userTrigger].y2 = (h/1000) * line.y2
+
        //position[userTrigger].x1 = position[userTrigger].x2
        //position[userTrigger].y1 = position[userTrigger].y2
+
        position[userTrigger].direction = command
+
+      //if (userTrigger != user)
+      //  console.log("add line postion: " + JSON.stringify(position[userTrigger] ))
 
       this.setState({
         position: position })
