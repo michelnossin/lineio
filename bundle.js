@@ -663,6 +663,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
   }, {
     key: 'componentWillUnmount',
     value: function componentWillUnmount() {
+      console.log("Client with name " + user + " was disconnected , clearing client");
       clearInterval(this.timerPosition);
       clearInterval(this.timer);
       socket.emit('clientmessage', { type: "removeUser", user: user });
