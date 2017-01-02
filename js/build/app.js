@@ -19,25 +19,26 @@ var _LineHistory2 = _interopRequireDefault(_LineHistory);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 //By splitting realtime lines, and the cumulative hitory of lines we prevent history of being refreshed 50 times per second.
-//Also we split history per slot, to prevent the whole game to be rendered after each keypress of any user.
+//Also we split history per slot, and per split , which covers a quator of the windows.
+//to prevent the whole game to be rendered after each keypress of any user.
 _reactDom2.default.render(_react2.default.createElement(
   'div',
   null,
-  _react2.default.createElement(_LineHistory2.default, { slot: '0' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '1' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '2' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '3' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '4' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '5' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '6' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '7' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '8' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '9' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '10' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '11' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '12' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '13' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '14' }),
-  _react2.default.createElement(_LineHistory2.default, { slot: '15' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '0', split: '0' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '0', split: '1' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '0', split: '2' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '0', split: '3' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '1', split: '0' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '1', split: '1' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '1', split: '2' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '1', split: '3' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '2', split: '0' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '2', split: '1' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '2', split: '2' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '2', split: '3' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '3', split: '0' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '3', split: '1' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '3', split: '2' }),
+  _react2.default.createElement(_LineHistory2.default, { slot: '3', split: '3' }),
   _react2.default.createElement(_LineIO2.default, null)
 ), document.getElementById('app'));

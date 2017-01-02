@@ -6,13 +6,16 @@ var players = {}  //will contain current positions/speed/direction active player
 var slots = []
 let playfieldsize = 1000 //playfield is 1000x1000 (virtual)
 var cnt=0
-for (pos = 100; pos <= 400; pos = pos + 100) { //16 players nicely divided
-    slots.push({ slot: 0 + cnt, direction: "D", styling: "5px solid orange", x1: pos, y1 : pos, x2: pos, y2 : pos,speed : 1})
-    slots.push({ slot: 1 + cnt, direction: "U", styling: "5px solid yellow", x1: playfieldsize - pos, y1 : playfieldsize - pos, x2: playfieldsize - pos, y2 : playfieldsize - pos,speed : 1})
-    slots.push({ slot: 2 + cnt, direction: "L", styling: "5px solid blue",x1: playfieldsize - pos, y1 : pos, x2: playfieldsize - pos, y2 : pos,speed : 1})
-    slots.push({ slot: 3 + cnt, direction: "R", styling: "5px solid red",x1: pos, y1 : playfieldsize - pos, x2: pos, y2 : playfieldsize - pos,speed : 1})
-    cnt = cnt + 4
-}
+
+//Althoug we could add manu more user , for now keep it at 4 max.
+var pos=100
+//for (pos = 100; pos <= 400; pos = pos + 100) { //16 players nicely divided
+slots.push({ slot: 0 + cnt, direction: "D", styling: "5px solid orange", x1: pos, y1 : pos, x2: pos, y2 : pos,speed : 1})
+slots.push({ slot: 1 + cnt, direction: "U", styling: "5px solid yellow", x1: playfieldsize - pos, y1 : playfieldsize - pos, x2: playfieldsize - pos, y2 : playfieldsize - pos,speed : 1})
+slots.push({ slot: 2 + cnt, direction: "L", styling: "5px solid blue",x1: playfieldsize - pos, y1 : pos, x2: playfieldsize - pos, y2 : pos,speed : 1})
+slots.push({ slot: 3 + cnt, direction: "R", styling: "5px solid red",x1: pos, y1 : playfieldsize - pos, x2: pos, y2 : playfieldsize - pos,speed : 1})
+cnt = cnt + 4
+//}
 
 //Start the socket server
 exports.initialize = function(server) {
@@ -104,8 +107,23 @@ exports.initialize = function(server) {
 
               //First let everybody know, also the sender, they need to add the ccurent line in the history array before we change its properties
               //io.sockets.emit('serverevent', {type : "addline", user: message.user, line : message.line , command: message.command })
-              socket.broadcast.emit('serverevent', {type : "addline", user: message.user, line : message.line , command: message.command })
-              socket.emit('serverevent', {type : "addline", user: message.user, line : message.line , command: message.command })
+              var split="-1"
+              if (message.line.x1 < 500) {
+                if (message.line.y1 < 500)
+                  split="0"
+                else
+                  split="1"
+
+              }
+              else {
+                if (message.line.y1 < 500)
+                  split="2"
+                else
+                  split="3"
+              }
+
+              socket.broadcast.emit('serverevent', {type : "addline", user: message.user, line : message.line , command: message.command,split: split })
+              socket.emit('serverevent', {type : "addline", user: message.user, line : message.line , command: message.command,split: split })
 
               //Switch direction of user, and start the new line at end location of previous line.
               players[message.user].direction = message.command

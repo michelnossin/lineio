@@ -49,7 +49,9 @@ var LineHistory = function (_React$Component) {
 
         //We split historical lines per slot , and give each slot a linehistory object to handled the events.
         //If the line's player has a slot which matches the slot of this handler lets pick up this event.
-        if (parseInt(props.slot) == ev_msg.line.slot) _this.addLine(ev_msg.line);
+        if (parseInt(props.slot) == ev_msg.line.slot) {
+          if (parseInt(props.split) == parseInt(ev_msg.split)) _this.addLine(ev_msg.line);
+        }
       } else if (ev_msg.type == 'resetclients') {
         console.log("Client history lines resetting after server request");
         _this.resetClient();
@@ -128,12 +130,14 @@ var LineHistory = function (_React$Component) {
 
 LineHistory.propTypes = {
   url: _react2.default.PropTypes.string, //Not yet used, at some point backend will be added
-  slot: _react2.default.PropTypes.string
+  slot: _react2.default.PropTypes.string, //This dispatchers handles all inactive lines for player using thi slot.
+  split: _react2.default.PropTypes.string //The split determines the screen section (quator of window) to update based on start position of the line
 };
 
 LineHistory.defaultProps = {
   url: "http://localhost:3000/pandaweb/all",
-  slot: "-1"
+  slot: "-1",
+  split: "-1"
 };
 
 exports.default = LineHistory;
