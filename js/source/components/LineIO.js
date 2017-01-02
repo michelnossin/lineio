@@ -82,11 +82,16 @@ class LineIO extends React.Component {
     var positions = {}
     positions = Object.assign({},this.state.position)
 
+    let w = window.innerWidth
+    let h = window.innerHeight
+
     Object.keys(positions).map((player,index) => {
-      if (positions[player].direction == "R") { positions[player].x2 = positions[player].x2 + positions[player].speed }
-      else if (positions[player].direction == "L") { positions[player].x2 = positions[player].x2 - positions[player].speed }
-      else if (positions[player].direction == "U") { positions[player].y2 = positions[player].y2 - positions[player].speed }
-      else if (positions[player].direction == "D") { positions[player].y2 = positions[player].y2 + positions[player].speed }
+      let normSpeedX = (w/1000) * positions[player].speed  //Speed (normally 1) is based on virtual grid , normalise first
+      let normSpeedY = (h/1000) * positions[player].speed
+      if (positions[player].direction == "R") { positions[player].x2 = positions[player].x2 + normSpeedX }
+      else if (positions[player].direction == "L") { positions[player].x2 = positions[player].x2 - normSpeedX }
+      else if (positions[player].direction == "U") { positions[player].y2 = positions[player].y2 - normSpeedY }
+      else if (positions[player].direction == "D") { positions[player].y2 = positions[player].y2 + normSpeedY }
     });
 
     this.setState( { position: positions })
@@ -110,6 +115,11 @@ class LineIO extends React.Component {
 
   //Generate random control command, handy for simulation of multipley players.
   autoKeyPress() {
+    if (!(user in this.state.position)) {
+      console.log("The current user does not exists in his own metadata, skipping keypress")
+      return
+    }
+
     let w = window.innerWidth
     let h = window.innerHeight
 
@@ -168,22 +178,20 @@ class LineIO extends React.Component {
 
   //client set timer, at this moment only used to simulate key events
   componentDidMount()  {
-    this.timerPosition = setInterval(this.myLoop,5); //will move the active player lines
+    this.timerPosition = setInterval(this.myLoop,10); //will move the active player lines
     this.timer = setInterval(this.autoKeyPress, 500); //2 second random movement by clicking some cursor keys
 
     var self = this;
     socket.on('connect', function (data) {
-      console.log("Client receives connect event, clearing client"  );
+      console.log("Client was connected using socket id " + String(socket.id) + ". Let reset client" );
       self.resetClient()
       console.log("Client sends handshake to server with username " + user  );
       socket.emit('clientmessage', { type: "userHandshake", user: user })
     });
     socket.on('disconnect', function() {
-      console.log("Client was disconnected , clearing client"  );
+      console.log("Client was disconnected , clearing client on socket " + String(socket.id)  );
       self.resetClient()
     })
-
-
   }
 
   //Stop timers afterwards
@@ -194,10 +202,14 @@ class LineIO extends React.Component {
     socket.emit('clientmessage', {type : "removeUser", user: user})
   }
 
-
-
   //keypress reveived to, eg , change the direction of our line
   componentWillReceiveProps( nextProps ) {
+
+    if (!(user in this.state.position)) {
+      console.log("The current user does not exists in his own metadata, skipping keypress")
+      return
+    }
+
     let w = window.innerWidth
     let h = window.innerHeight
 
@@ -252,6 +264,12 @@ class LineIO extends React.Component {
   addLine(userTrigger,command,line) {
       //console.log("addline: " + JSON.stringify(userTrigger)  + " command " + JSON.stringify(command) +  " line " + JSON.stringify(line));
        var position = Object.assign({},this.state.position)
+
+       if (!(userTrigger in position)) {
+         console.log("The line being drawn for user " + String(userTrigger) +  " does not exsist in the client metadata, skipping")
+         return
+       }
+
        let w = window.innerWidth
        let h = window.innerHeight
 

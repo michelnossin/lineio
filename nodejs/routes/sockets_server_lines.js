@@ -7,7 +7,7 @@ var slots = []
 let playfieldsize = 1000 //playfield is 1000x1000 (virtual)
 var cnt=0
 
-//Althoug we could add manu more user , for now keep it at 4 max.
+//Althoug we could add slots for many more users , for now keep it at 4 max.
 var pos=100
 //for (pos = 100; pos <= 400; pos = pos + 100) { //16 players nicely divided
 slots.push({ slot: 0 + cnt, direction: "D", styling: "5px solid orange", x1: pos, y1 : pos, x2: pos, y2 : pos,speed : 1})
@@ -41,15 +41,20 @@ exports.initialize = function(server) {
 
     counter = counter + 1 //used as timer
 
-  }, 5);  //10 ms loop (so 10* 1/1000th of a sec)
+  }, 10);  //10 ms loop (so 10* 1/1000th of a sec)
 
   //If a players leaves us lets remove it and let all know
   function removePlayer(socket) {
     for (var player in players) {
+      console.log("Checking if player " + String(player) + " on socket " + String(players[player]["socketid"]) + " match our disconnected socket.")
       if (players[player]["socketid"] == socket.id) {
+          console.log("Player " + String(player) + " using socket " + String(socket.id) + " will now be removed on the server" );
           delete players[player];
           socket.broadcast.emit('serverevent', {type : "removeUser", user: player})
-        }
+      }
+      else {
+        console.log("Player does not match, checking next")
+      }
     }
   }
 
@@ -57,7 +62,8 @@ exports.initialize = function(server) {
   function initNewPlayer(newUser,socketId) {
 
     //Determine slot nr to use (the lowest free slot nr), and use it's slot metadata as properties for the new user
-    for (slot = 0; slot <= 15; slot++) {
+    //Max 4 players, maybe larger in the future
+    for (slot = 0; slot <= 3; slot++) {
       var slotfound =0
       for (var player in players) {
         if (players[player].slot == slot) { slotfound = 1}
@@ -79,18 +85,20 @@ exports.initialize = function(server) {
 
   //server receives connect event from client
   io.sockets.on("connection", function(socket){
-    console.log("Client is connected to server" );
+    console.log("Client is connected to server using socket id " + String(socket.id) );
     //socket.emit('serverevent', {type : "resetGame"}) //After server restart clear all clients and demand client handshakes
 
     //USer is gone, remove from our list
     socket.on("disconnect",function(){
-      console.log("At time " + counter + " the user has disconnected. this is the socket: "  )
+      console.log("At time " + counter + " the user has disconnected. Socket uses socket id: " + String(socket.id)  )
       removePlayer(socket)
 
     })
 
     //server receives custom event from client
     socket.on('clientmessage', function(message){
+          if (message.type != "userCommand")
+            console.log("At time " + counter + " , session on socket id: " + String(socket.id)  + " sends a events." )
 
           //A user sends a text message
           if(message.type == "userMessage"){
@@ -100,8 +108,8 @@ exports.initialize = function(server) {
           }
           //A user pressed a key to control a line
           else if(message.type == "userCommand"){
-            console.log("At time " + counter + " the user " + message.user + " gives command : " + message.command);
-            console.log("line: " + JSON.stringify(message.line));
+            //console.log("At time " + counter + " the user " + message.user + " gives command : " + message.command);
+            //console.log("line: " + JSON.stringify(message.line));
 
             if (players[message.user]) {
 
@@ -140,7 +148,9 @@ exports.initialize = function(server) {
             socket.emit('serverevent', {type : "serverHandshake", user: newplayer})
             players[message.user] = newplayer
             console.log("Lets send all players and position to all users so they know each other")
-            io.sockets.emit('serverevent', {type : "positions", players: players })
+            //io.sockets.emit('serverevent', {type : "positions", players: players })
+            socket.broadcast.emit('serverevent', {type : "positions", players: players })
+            socket.emit('serverevent', {type : "positions", players: players })
 
           }
 

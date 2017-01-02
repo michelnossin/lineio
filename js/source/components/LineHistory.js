@@ -42,12 +42,12 @@ class LineHistory extends React.Component {
   componentWillMount(){
     var self = this;
     socket.on('connect', function (data) {
-      console.log("Client was connected to history dispatcher "  );
+      console.log("Client was connected to history dispatcher using socket id " + String(socket.id)  );
       //self.setState({messages: data})
       //self.resetClient()
     });
     socket.on('disconnect', function() {
-      console.log("Client was disconnected , clearing client within history dispatcher"  );
+      console.log("Client was disconnected , clearing client on socket " + String(socket.id) + " within history dispatcher"  );
       self.resetClient()
     })
   }
