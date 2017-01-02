@@ -40,6 +40,7 @@ var LineHistory = function (_React$Component) {
 
     _this.addLine = _this.addLine.bind(_this);
     _this.resetClient = _this.resetClient.bind(_this);
+    _this.updateDimensions = _this.updateDimensions.bind(_this);
 
     //receive event from server
     socket.on('serverevent', function (ev_msg) {
@@ -67,7 +68,30 @@ var LineHistory = function (_React$Component) {
     return _this;
   }
 
+  //Call when windows resized.
+
+
   _createClass(LineHistory, [{
+    key: 'updateDimensions',
+    value: function updateDimensions() {
+      var orgWidth = this.state.width;
+      var orgHeight = this.state.height;
+      console.log("Width and Height resize to " + String(window.innerWidth) + " and " + String(window.innerHeight));
+      var newWidth = window.innerWidth;
+      var newHeight = window.innerHeight;
+      //this.setState( { width :window.innerWidth, height: window.innerHeight })
+
+      var codes = Object.assign([], this.state.codes);
+      codes.map(function (line, index) {
+        line["x1"] = newWidth / orgWidth * line["x1"];
+        line["x2"] = newWidth / orgWidth * line["x2"];
+        line["y1"] = newHeight / orgHeight * line["y1"];
+        line["y2"] = newHeight / orgHeight * line["y2"];
+      });
+
+      this.setState({ codes: codes, width: window.innerWidth, height: window.innerHeight });
+    }
+  }, {
     key: 'componentWillMount',
     value: function componentWillMount() {
       var self = this;
@@ -80,6 +104,21 @@ var LineHistory = function (_React$Component) {
         console.log("Client was disconnected , clearing client on socket " + String(socket.id) + " within history dispatcher");
         self.resetClient();
       });
+
+      this.updateDimensions();
+    }
+  }, {
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      window.addEventListener("resize", this.updateDimensions);
+    }
+
+    //remove any timers and listeners when client stops
+
+  }, {
+    key: 'componentWillUnmount',
+    value: function componentWillUnmount() {
+      window.removeEventListener("resize", this.updateDimensions);
     }
 
     //reset client after connect

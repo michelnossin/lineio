@@ -11,6 +11,7 @@ class LineHistory extends React.Component {
 
     this.addLine = this.addLine.bind(this)
     this.resetClient = this.resetClient.bind(this)
+    this.updateDimensions = this.updateDimensions.bind(this)
 
     //receive event from server
     socket.on('serverevent', ev_msg => {
@@ -39,6 +40,27 @@ class LineHistory extends React.Component {
     })
   }
 
+  //Call when windows resized.
+  updateDimensions() {
+        let orgWidth = this.state.width
+        let orgHeight = this.state.height
+        console.log("Width and Height resize to " + String(window.innerWidth) + " and " + String(window.innerHeight)  );
+        let newWidth = window.innerWidth
+        let newHeight = window.innerHeight
+        //this.setState( { width :window.innerWidth, height: window.innerHeight })
+
+        var codes = Object.assign([],this.state.codes)
+        codes.map((line,index) => {
+          line["x1"] = (newWidth/orgWidth) * line["x1"]
+          line["x2"]  = (newWidth/orgWidth) * line["x2"]
+          line["y1"] = (newHeight/orgHeight) * line["y1"]
+          line["y2"] = (newHeight/orgHeight) * line["y2"]
+        })
+
+        this.setState( { codes: codes , width :window.innerWidth, height: window.innerHeight})
+    }
+
+
   componentWillMount(){
     var self = this;
     socket.on('connect', function (data) {
@@ -50,6 +72,18 @@ class LineHistory extends React.Component {
       console.log("Client was disconnected , clearing client on socket " + String(socket.id) + " within history dispatcher"  );
       self.resetClient()
     })
+
+    this.updateDimensions();
+
+  }
+
+  componentDidMount()  {
+    window.addEventListener("resize", this.updateDimensions);
+  }
+
+  //remove any timers and listeners when client stops
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.updateDimensions);
   }
 
   //reset client after connect

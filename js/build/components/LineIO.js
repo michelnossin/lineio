@@ -63,6 +63,7 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
     _this.autoKeyPress = _this.autoKeyPress.bind(_this);
     _this.resetClient = _this.resetClient.bind(_this);
     _this.myLoop = _this.myLoop.bind(_this);
+    _this.updateDimensions = _this.updateDimensions.bind(_this);
 
     //receive event from server
     socket.on('serverevent', function (ev_msg) {
@@ -199,6 +200,38 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       socket.emit('clientmessage', { type: "userCommand", user: user, command: keypress, line: liny });
     }
 
+    //Call when windows resized.
+
+  }, {
+    key: 'updateDimensions',
+    value: function updateDimensions() {
+      var orgWidth = this.state.width;
+      var orgHeight = this.state.height;
+      console.log("Width and Height resize to " + String(window.innerWidth) + " and " + String(window.innerHeight));
+      var newWidth = window.innerWidth;
+      var newHeight = window.innerHeight;
+      //this.setState( { width :window.innerWidth, height: window.innerHeight })
+
+      var positions = Object.assign({}, this.state.position);
+
+      Object.keys(positions).map(function (player, index) {
+        positions[player].x1 = newWidth / orgWidth * positions[player].x1;
+        positions[player].x2 = newWidth / orgWidth * positions[player].x2;
+        positions[player].y1 = newHeight / orgHeight * positions[player].y1;
+        positions[player].y2 = newHeight / orgHeight * positions[player].y2;
+      });
+
+      this.setState({ position: positions, width: window.innerWidth, height: window.innerHeight });
+    }
+
+    //Set current window size before starting
+
+  }, {
+    key: 'componentWillMount',
+    value: function componentWillMount() {
+      this.updateDimensions();
+    }
+
     //client set timer, at this moment only used to simulate key events
 
   }, {
@@ -218,9 +251,11 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         console.log("Client was disconnected , clearing client on socket " + String(socket.id));
         self.resetClient();
       });
+
+      window.addEventListener("resize", this.updateDimensions);
     }
 
-    //Stop timers afterwards
+    //remove any timers and listeners when client stops
 
   }, {
     key: 'componentWillUnmount',
@@ -229,6 +264,8 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       clearInterval(this.timerPosition);
       clearInterval(this.timer);
       socket.emit('clientmessage', { type: "removeUser", user: user });
+
+      window.removeEventListener("resize", this.updateDimensions);
     }
 
     //keypress reveived to, eg , change the direction of our line
@@ -311,16 +348,8 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
       position[userTrigger].x1 = w / 1000 * line.x2;
       position[userTrigger].x2 = w / 1000 * line.x2;
       position[userTrigger].y1 = h / 1000 * line.y2;
-      //console.log("y1 position changed by addline " + JSON.stringify(position[userTrigger].y1) + " for user " + JSON.stringify(userTrigger) + " for slot " + JSON.stringify(line.slot))
       position[userTrigger].y2 = h / 1000 * line.y2;
-
-      //position[userTrigger].x1 = position[userTrigger].x2
-      //position[userTrigger].y1 = position[userTrigger].y2
-
       position[userTrigger].direction = command;
-
-      //if (userTrigger != user)
-      //  console.log("add line postion: " + JSON.stringify(position[userTrigger] ))
 
       this.setState({
         position: position });
@@ -362,7 +391,6 @@ var LineIO = (0, _reactKeydown2.default)(_class = function (_React$Component) {
         positions[username]["y2"] = h / 1000 * positions[username].y2;
 
         _this2.setState({ position: positions });
-        //this.forceUpdate()
       });
     }
 
