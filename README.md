@@ -1,14 +1,19 @@
 
 # Goal LineIO
-The is a demo showing how to make a game based on Snakes. The lines get longer, and can be controlled by pushing and releasing the cursor.
-Normally hitting a line would end the game, but this is not finished yet.
-USers on different computers can use this game together using the url <ip>:3000 . The ip set (at the top) in the LineIO.js and LineHistory.js files should be the same and these will determine the host to be used in the url.
+The is a demo showing how to make a game based on Snakes with multiple users. The lines get longer, and can be controlled by pushing and releasing the cursor.Normally hitting a line would end the game, but this is not finished yet.
+Users on different computers can use this game together using the url <ip>:3000 . The ip set (at the top) in the LineIO.js and LineHistory.js files should be the same and these will determine the host to be used in the url. Using localhost can work, just make sure you use a seperate browser (or detached tab) . The code by default shows random key presses which moves the lines within the Window bounderies.
 
 
 # Scope
 
-We will use a nodejs backend, and reactjs frontend.  Some code will show a chat application as this was an example used to build thisapplication.
+We will use a nodejs backend, and reactjs frontend.  Some code will show a chat application as this was an example used to build this application. Socket.io is used to push events to our clients.
 
+# Performance
+Initially the socket server did all the coordinating of the lines but this would give huge network loads and did not perform well.
+In the latest version the clients do all the work, only if a player switches the line direction this is communicated to all players.
+The games will work very nicely with 2 players. With 3 players it is still playable. With 4 players the lines will not be rendered fluently after a while. The code itself initially could handle 16 users, but is now limited to 4.
+
+React elements for the non-active (history) lines are seperated from active lines to prevent rerendering the Window 50 times a second is too much. Also the history elements are are splitted based on Window location.
 
 # Install
 
