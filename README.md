@@ -1,19 +1,14 @@
-Work in progress (long term project)
 
 # Goal LineIO
-An online game. Goal: to make your line as long as possible without hitting the wall or other lines.
-Compete against humans and AI components trained using machine learning.
+The is a demo showing how to make a game based on Snakes. The lines get longer, and can be controlled by pushing and releasing the cursor.
+Normally hitting a line would end the game, but this is not finished yet.
+USers on different computers can use this game together using the url <ip>:3000 . The ip set (at the top) in the LineIO.js and LineHistory.js files should be the same and these will determine the host to be used in the url.
+
 
 # Scope
 
-We will use a nodejs backend, and reactjs frontend. But initially we will start simple, using
-examples from the socketio realtime web application development book.
-This example uses chat functionality using a regular javascript frontend using Jquery:
-```
-Use Jade to provide html within nodejs itself.
-Use some Jquery to use our Nodejs based socket.io server
-We will use it to add chat functionality
-```
+We will use a nodejs backend, and reactjs frontend.  Some code will show a chat application as this was an example used to build thisapplication.
+
 
 # Install
 
@@ -59,19 +54,6 @@ Optional: set DEBUG=nodejs
 Notice we will NOT do npm start, as our code later was altered and starts a http server by itself.
 ```
 Go test it: http://localhost:3000
-
-#Install jquery
-
-The regular chat example use jquery to call the Socket.io server.
-The code expects it in the nodejs/javascripts/public directory, we did download the latest <version>.min.js version
-from jquery.com and put it there.
-
-To test if it works
-```
-go to nodejs subdir
-node app.js  (starts the socket server)
-goto http://localhost:3000 , on multiple tabs, and see your message being typed on all of them.
-```
 
 #Build after each change in reactjs frontend only
 
